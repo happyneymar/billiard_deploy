@@ -1,0 +1,90 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">约战</h1>
+  <p class="subtle">发布约战请求，或加入其他人的台球约战。</p>
+
+  {% if battle_notices %}
+    <div class="card" style="margin-bottom:18px;display:grid;gap:8px;">
+      {% for notice in battle_notices %}
+        <p style="margin:0;font-weight:750;">{{ notice }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card" style="margin-bottom:18px;">
+    <form method="post" class="grid" style="gap:12px;">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="{{ form.battle_time.id_for_label }}">时间</label>
+          {{ form.battle_time }}
+          {{ form.battle_time.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.location.id_for_label }}">地点</label>
+          {{ form.location }}
+          {{ form.location.errors }}
+        </div>
+      </div>
+      <div class="field">
+        <label for="{{ form.player_count.id_for_label }}">寻找人数</label>
+        {{ form.player_count }}
+        {{ form.player_count.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.note.id_for_label }}">备注</label>
+        {{ form.note }}
+        {{ form.note.errors }}
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" type="submit">发布约战</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="grid" style="gap:14px;">
+    {% for battle in battles %}
+      <article class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:18px;font-weight:850;margin-bottom:6px;">{{ battle.battle_time|date:"Y-m-d H:i" }} · {{ battle.location }}</div>
+            <p style="margin:0;color:var(--muted);">发起人：{{ battle.user.username }} · 寻找 {{ battle.player_count }} 人</p>
+          </div>
+          {% if battle.user_id != user.id %}
+            {% if battle.has_joined %}
+              <span class="pill"><strong>已应战</strong></span>
+            {% elif battle.is_full %}
+              <span class="pill"><strong>人数已满</strong></span>
+            {% else %}
+              <form method="post" action="{% url 'diary:battle_join' battle.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary" type="submit">加入</button>
+              </form>
+            {% endif %}
+          {% else %}
+            <span class="pill"><strong>我发起的</strong></span>
+          {% endif %}
+        </div>
+
+        {% if battle.note %}
+          <p style="margin:12px 0 0;line-height:1.65;white-space:pre-wrap;">{{ battle.note }}</p>
+        {% endif %}
+
+        <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--surface-2);display:grid;gap:6px;">
+          <p style="margin:0;font-weight:750;">当前已有{{ battle.response_count }}人应战</p>
+          {% if battle.user_id == user.id %}
+            {% if battle.responses.all %}
+              <p style="margin:0;color:var(--muted);">应战用户：{% for response in battle.responses.all %}{{ response.user.username }}{% if not forloop.last %}、{% endif %}{% endfor %}</p>
+            {% else %}
+              <p style="margin:0;color:var(--muted);">暂时还没有人应战。</p>
+            {% endif %}
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="card"><p style="margin:0;">暂无约战请求。</p></div>
+    {% endfor %}
+  </div>
+{% endblock %}

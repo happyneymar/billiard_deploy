@@ -3,7 +3,7 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.validators import MaxLengthValidator
 
-from diary.models import DailyRecord, Moment
+from diary.models import BattleRequest, DailyRecord, Moment
 
 
 
@@ -159,6 +159,40 @@ class DailyRecordForm(forms.ModelForm):
             name = name.strip()[:64]  # 限制长度
         return name
 
+
+
+
+class BattleForm(forms.ModelForm):
+    class Meta:
+        model = BattleRequest
+        fields = ["battle_time", "location", "player_count", "note"]
+        widgets = {
+            "battle_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "location": forms.TextInput(attrs={"maxlength": "120", "placeholder": "例如：学校台球厅"}),
+            "player_count": forms.NumberInput(attrs={"min": "1", "max": "20"}),
+            "note": forms.Textarea(attrs={"rows": 3, "maxlength": "500", "placeholder": "补充玩法、水平、联系方式等"}),
+        }
+
+    def clean_location(self):
+        import re
+        location = self.cleaned_data.get("location", "")
+        location = re.sub(r"<[^>]+>", "", location).strip()[:120]
+        if not location:
+            raise forms.ValidationError("请填写地点")
+        return location
+
+    def clean_player_count(self):
+        count = self.cleaned_data.get("player_count") or 1
+        if count < 1:
+            raise forms.ValidationError("寻找人数至少为1人")
+        if count > 20:
+            raise forms.ValidationError("寻找人数不能超过20人")
+        return count
+
+    def clean_note(self):
+        import re
+        note = self.cleaned_data.get("note", "")
+        return re.sub(r"<[^>]+>", "", note).strip()[:500]
 
 class MomentForm(forms.ModelForm):
     text = forms.CharField(

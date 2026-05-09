@@ -245,3 +245,45 @@ class MomentComment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} - {self.text[:24]}"
+
+class BattleRequest(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="battle_requests",
+    )
+    battle_time = models.DateTimeField("约战时间")
+    location = models.CharField("地点", max_length=120)
+    player_count = models.PositiveIntegerField("寻找人数", default=1)
+    note = models.TextField("备注", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["battle_time", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} - {self.battle_time:%Y-%m-%d %H:%M} @ {self.location}"
+
+
+class BattleResponse(models.Model):
+    battle = models.ForeignKey(
+        BattleRequest,
+        on_delete=models.CASCADE,
+        related_name="responses",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="battle_responses",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["battle", "user"], name="unique_battle_response")
+        ]
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} joins {self.battle_id}"

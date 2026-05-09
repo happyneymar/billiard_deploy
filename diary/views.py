@@ -10,16 +10,19 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from diary.forms import DailyRecordForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
+from diary.forms import BattleForm, DailyRecordForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
 from diary.models import (
     ALLOWED_MEDIA_EXTENSIONS,
     MAX_UPLOAD_SIZE,
+    BattleRequest,
+    BattleResponse,
     DailyMedia,
     DailyRecord,
     MediaFileValidator,
@@ -493,6 +496,83 @@ def moment_comment(request, pk: int):
     return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
 
 
+
+def _build_battle_notices(user):
+    today = timezone.localdate()
+    battles = (
+        BattleRequest.objects.filter(battle_time__date=today)
+        .filter(Q(user=user) | Q(responses__user=user))
+        .select_related("user")
+        .prefetch_related("responses__user")
+        .distinct()
+        .order_by("battle_time")
+    )
+    notices = []
+    for battle in battles:
+        responders = [response.user.username for response in battle.responses.all()]
+        if battle.user_id == user.id:
+            names = responders
+        else:
+            names = [battle.user.username]
+        if not names:
+            continue
+        notices.append(
+            f"您今日{timezone.localtime(battle.battle_time).strftime('%H:%M')}在{battle.location}地方有一场和{', '.join(names)}的约战"
+        )
+    return notices
+
+
+@login_required
+def battles(request):
+    if request.method == "POST":
+        form = BattleForm(request.POST)
+        if form.is_valid():
+            battle = form.save(commit=False)
+            battle.user = request.user
+            battle.save()
+            messages.success(request, "约战请求已发布。")
+            return redirect("diary:battles")
+    else:
+        form = BattleForm()
+
+    battle_list = (
+        BattleRequest.objects.select_related("user")
+        .prefetch_related("responses__user")
+        .annotate(response_count=Count("responses", distinct=True))
+        .order_by("battle_time", "-created_at")
+    )
+    joined_battle_ids = set(
+        BattleResponse.objects.filter(user=request.user).values_list("battle_id", flat=True)
+    )
+    for battle in battle_list:
+        battle.has_joined = battle.id in joined_battle_ids
+        battle.is_full = battle.response_count >= battle.player_count
+
+    return render(
+        request,
+        "diary/battles.html",
+        {
+            "form": form,
+            "battles": battle_list,
+            "battle_notices": _build_battle_notices(request.user),
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def battle_join(request, pk: int):
+    battle = get_object_or_404(BattleRequest, pk=pk)
+    if battle.user_id == request.user.id:
+        messages.error(request, "不能应战自己发布的约战。")
+    elif battle.responses.filter(user=request.user).exists():
+        messages.info(request, "你已经应战过这条约战。")
+    elif battle.responses.count() >= battle.player_count:
+        messages.error(request, "这条约战人数已满。")
+    else:
+        BattleResponse.objects.create(battle=battle, user=request.user)
+        messages.success(request, "已加入约战。")
+    return redirect("diary:battles")
 @login_required
 def media_serve(request, relative_path: str):
     # relative_path 来自 FileField 的 upload_to 输出（不带前导 /）。
