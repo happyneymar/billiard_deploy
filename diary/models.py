@@ -14,7 +14,7 @@ ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
 ALLOWED_VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "avi"]
 ALLOWED_MEDIA_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS + ALLOWED_VIDEO_EXTENSIONS
 
-MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500MB
 MAX_IMAGE_DIMENSION = 4096  # 像素
 
 
@@ -82,6 +82,17 @@ def daily_media_upload_to(instance: "DailyMedia", filename: str) -> str:
     return (
         f"users/{instance.record.user_id}/"
         f"records/{instance.record.date:%Y-%m-%d}/"
+        f"{uuid.uuid4().hex}{ext}"
+    )
+
+
+def moment_media_upload_to(instance: "MomentMedia", filename: str) -> str:
+    ext = Path(validate_secure_filename(filename)).suffix.lower()
+    if ext not in [f".{e}" for e in ALLOWED_MEDIA_EXTENSIONS]:
+        ext = ".bin"
+    return (
+        f"users/{instance.moment.user_id}/"
+        f"moments/{instance.moment.created_at:%Y-%m-%d}/"
         f"{uuid.uuid4().hex}{ext}"
     )
 
@@ -162,3 +173,75 @@ class DailyMedia(models.Model):
 
     def __str__(self) -> str:
         return f"{self.record_id} - {self.media_type}"
+
+
+class Moment(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="moments",
+    )
+    text = models.TextField("文字内容", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        preview = self.text[:24] if self.text else "媒体动态"
+        return f"{self.user_id} - {preview}"
+
+
+class MomentMedia(models.Model):
+    moment = models.ForeignKey(
+        Moment,
+        on_delete=models.CASCADE,
+        related_name="media_items",
+    )
+    file = models.FileField(upload_to=moment_media_upload_to)
+    media_type = models.CharField(max_length=5, choices=DailyMedia.MEDIA_TYPE_CHOICES)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    @staticmethod
+    def guess_media_type(uploaded_file) -> str:
+        return DailyMedia.guess_media_type(uploaded_file)
+
+    def __str__(self) -> str:
+        return f"{self.moment_id} - {self.media_type}"
+
+
+class MomentLike(models.Model):
+    moment = models.ForeignKey(Moment, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="moment_likes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["moment", "user"], name="unique_moment_like")
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} likes {self.moment_id}"
+
+
+class MomentComment(models.Model):
+    moment = models.ForeignKey(Moment, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="moment_comments",
+    )
+    text = models.TextField("评论内容")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} - {self.text[:24]}"

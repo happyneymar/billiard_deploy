@@ -3,7 +3,7 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.validators import MaxLengthValidator
 
-from diary.models import DailyRecord
+from diary.models import DailyRecord, Moment
 
 
 # ============ 密码修改表单 ============
@@ -132,4 +132,30 @@ class DailyRecordForm(forms.ModelForm):
             name = re.sub(r"[^\w\s\u4e00-\u9fff\-\(\)\[\]]", "", name)
             name = name.strip()[:64]  # 限制长度
         return name
+
+
+class MomentForm(forms.ModelForm):
+    text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 3,
+                "maxlength": "1000",
+                "placeholder": "分享今天的台球瞬间...",
+            }
+        ),
+        validators=[MaxLengthValidator(1000)],
+        label="朋友圈内容",
+    )
+
+    class Meta:
+        model = Moment
+        fields = ["text"]
+
+    def clean_text(self):
+        text = self.cleaned_data.get("text", "")
+        if text:
+            import re
+            text = re.sub(r"<[^>]+>", "", text).strip()
+        return text
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from diary.models import DailyMedia, DailyRecord
+from diary.models import DailyMedia, DailyRecord, Moment, MomentComment, MomentLike, MomentMedia
 
 
 @admin.register(DailyRecord)
@@ -30,3 +30,30 @@ class DailyRecordAdmin(admin.ModelAdmin):
 class DailyMediaAdmin(admin.ModelAdmin):
     list_display = ["id", "record", "media_type", "uploaded_at"]
     list_filter = ["media_type", "uploaded_at"]
+
+
+@admin.register(Moment)
+class MomentAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", "created_at", "updated_at"]
+    list_filter = ["created_at", "user"]
+    search_fields = ["user__username", "text"]
+
+
+@admin.register(MomentMedia)
+class MomentMediaAdmin(admin.ModelAdmin):
+    list_display = ["id", "moment", "media_type", "uploaded_at"]
+    list_filter = ["media_type", "uploaded_at"]
+
+
+@admin.register(MomentLike)
+class MomentLikeAdmin(admin.ModelAdmin):
+    list_display = ["id", "moment", "user", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["user__username", "moment__text"]
+
+
+@admin.register(MomentComment)
+class MomentCommentAdmin(admin.ModelAdmin):
+    list_display = ["id", "moment", "user", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["user__username", "text", "moment__text"]

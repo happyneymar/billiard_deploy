@@ -1,0 +1,148 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
+    <a class="btn" href="{{ back_url }}">{{ back_label }}</a>
+  </div>
+  <p class="subtle">{{ subtitle }}</p>
+
+  {% if show_composer %}
+    <div class="card" style="margin-bottom:18px;">
+      <form method="post" enctype="multipart/form-data" class="grid" style="gap:12px;">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="field">
+          {{ form.text.label_tag }}
+          {{ form.text }}
+          {% if form.text.errors %}<div class="errors">{{ form.text.errors }}</div>{% endif %}
+        </div>
+        <div class="field">
+          <label for="id_media_files">图片或视频</label>
+          <input id="id_media_files" type="file" name="media_files" accept="image/*,video/*" multiple>
+          <div class="help">可只发文字，也可添加图片/视频，最多9个文件，单个文件最大500MB。</div>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="btn btn-primary" type="submit">发布</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="moments-feed" style="display:grid; gap:14px;">
+    {% for moment in moments %}
+      <article id="moment-{{ moment.pk }}" class="card" style="display:grid; grid-template-columns:44px 1fr; gap:12px; padding:14px 16px;">
+        <a href="{% url 'diary:public_profile' moment.user.username %}" style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(34,197,94,0.9));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;text-decoration:none;">
+          {{ moment.user.username|first|upper }}
+        </a>
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;">
+            <a href="{% url 'diary:public_profile' moment.user.username %}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ moment.user.username }}</a>
+            <span style="font-size:12px;color:var(--muted);white-space:nowrap;">{{ moment.created_at|date:"Y-m-d H:i" }}</span>
+          </div>
+
+          {% if moment.text %}
+            <p style="margin:0 0 10px;line-height:1.65;white-space:pre-wrap;">{{ moment.text }}</p>
+          {% endif %}
+
+          {% if moment.media_items.all %}
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;">
+              {% for media in moment.media_items.all %}
+                <div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);">
+                  {% if media.media_type == "image" %}
+                    <img src="{% url 'diary:media_serve' media.file.name %}" alt="朋友圈图片" style="width:100%;height:100%;object-fit:cover;display:block;">
+                  {% else %}
+                    <video src="{% url 'diary:media_serve' media.file.name %}" controls style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
+            <form class="js-like-form" method="post" action="{% url 'diary:moment_like' moment.pk %}">
+              {% csrf_token %}
+              <button class="btn {% if moment.is_liked_by_me %}btn-primary{% endif %}" type="submit" style="font-size:12px;padding:6px 10px;">
+                <span class="js-like-label">{% if moment.is_liked_by_me %}已赞{% else %}点赞{% endif %}</span>
+                <span class="js-like-count">{{ moment.like_count }}</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="js-comments" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);display:{% if moment.comments.all %}grid{% else %}none{% endif %};gap:6px;">
+            {% if moment.comments.all %}
+              {% for comment in moment.comments.all %}
+                <div style="font-size:14px;line-height:1.5;">
+                  <strong>{{ comment.user.username }}：</strong>{{ comment.text }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <form class="js-comment-form" method="post" action="{% url 'diary:moment_comment' moment.pk %}" style="display:flex;gap:8px;margin-top:10px;">
+            {% csrf_token %}
+            <input type="text" name="text" maxlength="500" placeholder="评论" style="border-radius:999px;padding:8px 12px;">
+            <button class="btn" type="submit" style="font-size:12px;padding:7px 12px;white-space:nowrap;">发送</button>
+          </form>
+        </div>
+      </article>
+    {% empty %}
+      <div class="card">
+        <p style="margin:0;">还没有朋友圈动态。</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    document.querySelectorAll(".js-like-form").forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = form.querySelector("button");
+        const label = form.querySelector(".js-like-label");
+        const count = form.querySelector(".js-like-count");
+        const data = new FormData(form);
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: data,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        });
+        if (!response.ok) return;
+        const result = await response.json();
+        label.textContent = result.liked ? "已赞" : "点赞";
+        count.textContent = result.like_count;
+        button.classList.toggle("btn-primary", result.liked);
+      });
+    });
+
+    document.querySelectorAll(".js-comment-form").forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const input = form.querySelector('input[name="text"]');
+        if (!input.value.trim()) return;
+        const data = new FormData(form);
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: data,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        });
+        if (!response.ok) return;
+        const result = await response.json();
+        const comments = form.closest("article").querySelector(".js-comments");
+        const item = document.createElement("div");
+        const name = document.createElement("strong");
+        item.style.fontSize = "14px";
+        item.style.lineHeight = "1.5";
+        name.textContent = `${result.comment.username}：`;
+        item.appendChild(name);
+        item.append(document.createTextNode(result.comment.text));
+        comments.appendChild(item);
+        comments.style.display = "grid";
+        input.value = "";
+      });
+    });
+  </script>
+{% endblock %}

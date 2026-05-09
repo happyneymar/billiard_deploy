@@ -93,5 +93,6 @@
 
   <div class="footer-links" style="margin-top:14px;">
     <a class="btn" href="{% url 'diary:record_list' %}">返回我的记录</a>
+    <a class="btn btn-primary" href="{% url 'diary:user_moments' target_user.username %}">查看TA的朋友圈</a>
   </div>
 {% endblock %}

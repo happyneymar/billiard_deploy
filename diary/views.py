@@ -4,24 +4,29 @@ import mimetypes
 import re
 from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from diary.forms import DailyRecordForm, PasswordResetVerifyForm, TeacherVerifyForm
+from diary.forms import DailyRecordForm, MomentForm, PasswordResetVerifyForm, TeacherVerifyForm
 from diary.models import (
     ALLOWED_MEDIA_EXTENSIONS,
     MAX_UPLOAD_SIZE,
     DailyMedia,
     DailyRecord,
     MediaFileValidator,
+    Moment,
+    MomentComment,
+    MomentLike,
+    MomentMedia,
     validate_secure_filename,
 )
 
@@ -344,13 +349,162 @@ def public_profile(request, username: str):
 
 
 @login_required
+def moments_feed(request):
+    if request.method == "POST":
+        form = MomentForm(request.POST)
+        media_files = request.FILES.getlist("media_files")
+
+        if len(media_files) > 9:
+            form.add_error(None, "一次最多上传9个图片或视频。")
+
+        valid_media = []
+        for uploaded in media_files:
+            errors = _validate_media_file(uploaded)
+            if errors:
+                form.add_error(None, f"{uploaded.name}: {'；'.join(errors)}")
+            else:
+                valid_media.append(uploaded)
+
+        if form.is_valid():
+            text = form.cleaned_data["text"]
+            if not text and not valid_media:
+                form.add_error(None, "请填写文字，或上传至少一个图片/视频。")
+            else:
+                with transaction.atomic():
+                    moment = Moment.objects.create(user=request.user, text=text)
+                    for uploaded in valid_media:
+                        MomentMedia.objects.create(
+                            moment=moment,
+                            file=uploaded,
+                            media_type=MomentMedia.guess_media_type(uploaded),
+                        )
+                messages.success(request, "朋友圈已发布。")
+                return redirect("diary:moments")
+    else:
+        form = MomentForm()
+
+    return render(
+        request,
+        "diary/moments.html",
+        {
+            "form": form,
+            **_build_moments_context(
+                request,
+                Moment.objects.all(),
+                page_title="朋友圈",
+                subtitle="分享台球瞬间，看看大家最近在打什么。",
+                back_url=reverse("diary:record_list"),
+                back_label="返回",
+                show_composer=True,
+            ),
+        },
+    )
+
+
+def _build_moments_context(
+    request,
+    moments_qs,
+    page_title,
+    subtitle,
+    back_url,
+    back_label,
+    show_composer=False,
+):
+    moments = (
+        moments_qs.select_related("user")
+        .prefetch_related("media_items", "comments__user")
+        .annotate(like_count=Count("likes", distinct=True))
+        .order_by("-created_at")
+    )
+    liked_moment_ids = set(
+        MomentLike.objects.filter(user=request.user, moment__in=moments).values_list(
+            "moment_id", flat=True
+        )
+    )
+    for moment in moments:
+        moment.is_liked_by_me = moment.id in liked_moment_ids
+
+    return {
+        "moments": moments,
+        "page_title": page_title,
+        "subtitle": subtitle,
+        "back_url": back_url,
+        "back_label": back_label,
+        "show_composer": show_composer,
+    }
+
+
+@login_required
+def user_moments(request, username: str):
+    target = get_object_or_404(User, username=username)
+    return render(
+        request,
+        "diary/moments.html",
+        _build_moments_context(
+            request,
+            Moment.objects.filter(user=target),
+            page_title=f"{target.username} 的朋友圈",
+            subtitle=f"以下是 {target.username} 发布过的朋友圈。",
+            back_url=reverse("diary:public_profile", kwargs={"username": target.username}),
+            back_label="返回TA的主页",
+        ),
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def moment_like(request, pk: int):
+    moment = get_object_or_404(Moment, pk=pk)
+    like = MomentLike.objects.filter(moment=moment, user=request.user).first()
+    if like:
+        like.delete()
+        liked = False
+    else:
+        MomentLike.objects.create(moment=moment, user=request.user)
+        liked = True
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "liked": liked,
+                "like_count": moment.likes.count(),
+            }
+        )
+    return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
+
+
+@login_required
+@require_http_methods(["POST"])
+def moment_comment(request, pk: int):
+    moment = get_object_or_404(Moment, pk=pk)
+    text = re.sub(r"<[^>]+>", "", request.POST.get("text", "")).strip()[:500]
+    if text:
+        comment = MomentComment.objects.create(moment=moment, user=request.user, text=text)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(
+                {
+                    "comment": {
+                        "username": comment.user.username,
+                        "text": comment.text,
+                    }
+                }
+            )
+    elif request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"error": "评论内容不能为空"}, status=400)
+    return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
+
+
+@login_required
 def media_serve(request, relative_path: str):
     # relative_path 来自 FileField 的 upload_to 输出（不带前导 /）。
-    media = get_object_or_404(
-        DailyMedia.objects.select_related("record"),
+    media = DailyMedia.objects.select_related("record").filter(
         file=relative_path,
         record__user=request.user,
-    )
+    ).first()
+    if media is None:
+        media = get_object_or_404(
+            MomentMedia.objects.select_related("moment"),
+            file=relative_path,
+        )
 
     content_type, _ = mimetypes.guess_type(media.file.name)
     try:
