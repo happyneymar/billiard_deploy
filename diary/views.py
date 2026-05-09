@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Sum
@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from diary.forms import DailyRecordForm, MomentForm, PasswordResetVerifyForm, TeacherVerifyForm
+from diary.forms import DailyRecordForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
 from diary.models import (
     ALLOWED_MEDIA_EXTENSIONS,
     MAX_UPLOAD_SIZE,
@@ -74,13 +74,13 @@ def _sanitize_input(value, max_length=255, pattern=None):
 
 def register(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = SimpleUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect("diary:record_list")
     else:
-        form = UserCreationForm()
+        form = SimpleUserCreationForm()
     return render(request, "diary/register.html", {"form": form})
 
 
@@ -653,3 +653,4 @@ def game_end(request):
         return JsonResponse({"success": True, "record_id": record.pk})
     except (json.JSONDecodeError, ValueError, TypeError):
         return JsonResponse({"error": "无效的请求数据"}, status=400)
+

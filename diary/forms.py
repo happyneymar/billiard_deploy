@@ -6,6 +6,32 @@ from django.core.validators import MaxLengthValidator
 from diary.models import DailyRecord, Moment
 
 
+
+class SimpleUserCreationForm(forms.Form):
+    username = forms.CharField(label="用户名", max_length=150)
+    password1 = forms.CharField(label="密码", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="确认密码", widget=forms.PasswordInput)
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "").strip()
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError("用户名已存在")
+        return username
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("两次输入的密码不一致")
+        return cleaned_data
+
+    def save(self):
+        user = User(username=self.cleaned_data["username"])
+        user.set_password(self.cleaned_data["password1"])
+        user.save()
+        return user
+
 # ============ 密码修改表单 ============
 
 class TeacherVerifyForm(forms.Form):
@@ -158,4 +184,5 @@ class MomentForm(forms.ModelForm):
             import re
             text = re.sub(r"<[^>]+>", "", text).strip()
         return text
+
 

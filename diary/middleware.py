@@ -80,6 +80,7 @@ class RateLimitMiddleware:
         "/static/",
         "/media/",
         "/favicon.ico",
+        "/logout/",
     ]
 
     def __init__(self, get_response):
@@ -127,7 +128,7 @@ class RateLimitMiddleware:
         """根据路径确定限流类型"""
         if "/api/" in path or path.startswith("/game_update_score") or path.startswith("/game_end"):
             return "api"
-        if "/login" in path or "/register" in path or "/logout" in path:
+        if "/login" in path or "/register" in path:
             return "auth"
         if "/upload" in path or "media" in path:
             return "upload"
@@ -146,3 +147,4 @@ class RateLimitMiddleware:
         if x_forwarded_for:
             return x_forwarded_for.split(",")[0].strip()
         return request.META.get("REMOTE_ADDR", "unknown")
+
