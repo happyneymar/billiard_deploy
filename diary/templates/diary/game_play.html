@@ -1,0 +1,214 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div id="game-container" data-game-type="{{ game_type }}" data-opponent-name="{{ opponent_name }}">
+    {% if game_type == "8ball" %}
+      {# 黑八模式 #}
+      <div style="text-align: center; padding: 20px 0;">
+        <h2 style="font-size: 18px; color: var(--muted); margin-bottom: 30px;">对手：<span id="opponent-display">{{ opponent_name|default:"未命名" }}</span></h2>
+        
+        <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; flex-wrap: wrap;">
+          <div style="text-align: center;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 10px;">我方得分</div>
+            <div id="score-for" style="font-size: 72px; font-weight: 800; line-height: 1;">0</div>
+            <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: center;">
+              <button onclick="updateScore('for', -1)" class="btn" style="font-size: 20px; padding: 8px 16px;">-</button>
+              <button onclick="updateScore('for', 1)" class="btn" style="font-size: 20px; padding: 8px 16px;">+</button>
+            </div>
+          </div>
+          
+          <div style="font-size: 48px; font-weight: 800; align-self: center; color: var(--muted);">:</div>
+          
+          <div style="text-align: center;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 10px;">对方得分</div>
+            <div id="score-against" style="font-size: 72px; font-weight: 800; line-height: 1;">0</div>
+            <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: center;">
+              <button onclick="updateScore('against', -1)" class="btn" style="font-size: 20px; padding: 8px 16px;">-</button>
+              <button onclick="updateScore('against', 1)" class="btn" style="font-size: 20px; padding: 8px 16px;">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap;">
+          <div style="text-align: center;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 10px;">接清</div>
+            <div id="clear-in" style="font-size: 48px; font-weight: 800;">0</div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+              <button onclick="updateClear('in', -1)" class="btn" style="font-size: 16px; padding: 6px 12px;">-</button>
+              <button onclick="updateClear('in', 1)" class="btn" style="font-size: 16px; padding: 6px 12px;">+</button>
+            </div>
+          </div>
+          
+          <div style="text-align: center;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 10px;">炸清</div>
+            <div id="clear-boom" style="font-size: 48px; font-weight: 800;">0</div>
+            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+              <button onclick="updateClear('boom', -1)" class="btn" style="font-size: 16px; padding: 6px 12px;">-</button>
+              <button onclick="updateClear('boom', 1)" class="btn" style="font-size: 16px; padding: 6px 12px;">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      {# 追分模式 #}
+      <div style="text-align: center; padding: 20px 0;">
+        <h2 style="font-size: 18px; color: var(--muted); margin-bottom: 30px;">对手：<span id="opponent-display">{{ opponent_name|default:"未命名" }}</span></h2>
+        
+        <div style="margin-bottom: 50px;">
+          <div style="font-size: 14px; color: var(--muted); margin-bottom: 15px;">当前得分</div>
+          <div id="current-score" style="font-size: 96px; font-weight: 800; line-height: 1;">0</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: 0 auto;">
+          {# 我方按键 #}
+          <div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--brand-2);">我方</div>
+            <div style="display: grid; gap: 12px;">
+              <button onclick="addScore('big_jin', 10)" class="btn" style="font-size: 18px; padding: 14px;">大金 (+10)</button>
+              <button onclick="addScore('small_jin', 7)" class="btn" style="font-size: 18px; padding: 14px;">小金 (+7)</button>
+              <button onclick="addScore('normal', 4)" class="btn" style="font-size: 18px; padding: 14px;">普胜 (+4)</button>
+              <button onclick="addScore('golden_nine', 4)" class="btn" style="font-size: 18px; padding: 14px;">黄金九 (+4)</button>
+              <button onclick="addScore('foul', -1)" class="btn" style="font-size: 18px; padding: 14px; background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">犯规 (-1)</button>
+            </div>
+            <div style="margin-top: 20px; font-size: 12px; color: var(--muted);">
+              <div>大金: <span id="big-jin-count">0</span></div>
+              <div>小金: <span id="small-jin-count">0</span></div>
+              <div>黄金九: <span id="golden-nine-count">0</span></div>
+              <div>犯规: <span id="foul-count">0</span></div>
+            </div>
+          </div>
+
+          {# 对手按键 #}
+          <div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--danger);">对手</div>
+            <div style="display: grid; gap: 12px;">
+              <button onclick="subtractScore('big_jin', 10)" class="btn" style="font-size: 18px; padding: 14px; background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">大金 (-10)</button>
+              <button onclick="subtractScore('small_jin', 7)" class="btn" style="font-size: 18px; padding: 14px; background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">小金 (-7)</button>
+              <button onclick="subtractScore('normal', 4)" class="btn" style="font-size: 18px; padding: 14px; background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">普胜 (-4)</button>
+              <button onclick="subtractScore('golden_nine', 4)" class="btn" style="font-size: 18px; padding: 14px; background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">黄金九 (-4)</button>
+              <button onclick="subtractScore('foul', -1)" class="btn" style="font-size: 18px; padding: 14px;">犯规 (+1)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 50px;">
+      <button onclick="endGame()" class="btn" style="background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);font-size: 18px; padding: 14px 28px;">关灯</button>
+    </div>
+  </div>
+
+  <script>
+    const gameType = document.getElementById('game-container').dataset.gameType;
+    const opponentName = document.getElementById('game-container').dataset.opponentName;
+    
+    let gameState = {
+      {% if game_type == "8ball" %}
+      score_for: 0,
+      score_against: 0,
+      clear_in: 0,
+      clear_boom: 0,
+      {% else %}
+      score: 0,
+      big_jin: 0,
+      small_jin: 0,
+      golden_nine: 0,
+      foul_count: 0,
+      {% endif %}
+    };
+
+    {% if game_type == "8ball" %}
+    function updateScore(side, delta) {
+      if (side === 'for') {
+        gameState.score_for = Math.max(0, gameState.score_for + delta);
+        document.getElementById('score-for').textContent = gameState.score_for;
+      } else {
+        gameState.score_against = Math.max(0, gameState.score_against + delta);
+        document.getElementById('score-against').textContent = gameState.score_against;
+      }
+    }
+
+    function updateClear(type, delta) {
+      if (type === 'in') {
+        gameState.clear_in = Math.max(0, gameState.clear_in + delta);
+        document.getElementById('clear-in').textContent = gameState.clear_in;
+      } else {
+        gameState.clear_boom = Math.max(0, gameState.clear_boom + delta);
+        document.getElementById('clear-boom').textContent = gameState.clear_boom;
+      }
+    }
+    {% else %}
+    function addScore(type, points) {
+      gameState.score += points;
+      if (type === 'big_jin') gameState.big_jin++;
+      else if (type === 'small_jin') gameState.small_jin++;
+      else if (type === 'golden_nine') gameState.golden_nine++;
+      else if (type === 'foul') gameState.foul_count++;
+      updateDisplay();
+    }
+
+    function subtractScore(type, points) {
+      gameState.score -= points;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      document.getElementById('current-score').textContent = gameState.score >= 0 ? '+' + gameState.score : gameState.score;
+      document.getElementById('big-jin-count').textContent = gameState.big_jin;
+      document.getElementById('small-jin-count').textContent = gameState.small_jin;
+      document.getElementById('golden-nine-count').textContent = gameState.golden_nine;
+      document.getElementById('foul-count').textContent = gameState.foul_count;
+    }
+    {% endif %}
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    async function endGame() {
+      if (!confirm('确定要结束比赛并保存结果吗？')) {
+        return;
+      }
+
+      const data = {
+        game_type: gameType,
+        opponent_name: opponentName,
+        ...gameState
+      };
+
+      try {
+        const csrftoken = getCookie('csrftoken');
+        const response = await fetch('{% url "diary:game_end" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('比赛结果已保存！');
+          window.location.href = '{% url "diary:record_list" %}';
+        } else {
+          alert('保存失败：' + (result.error || '未知错误'));
+        }
+      } catch (error) {
+        alert('保存失败：' + error.message);
+      }
+    }
+  </script>
+{% endblock %}

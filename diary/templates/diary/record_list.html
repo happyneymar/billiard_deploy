@@ -1,0 +1,131 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">你的历史记录</h1>
+  <p class="subtle">按日期保存黑八/追分战绩、清台局数、得分，以及当天的图片/视频与评论。</p>
+
+  {# ---------- 统计面板 ---------- #}
+  <div class="card" style="padding:14px 16px; margin-bottom:18px;">
+    {# 时间段选择标签 #}
+    <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">本月</a>
+      <a href="?period=half_year" class="btn {% if period == 'half_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">半年内</a>
+      <a href="?period=one_year" class="btn {% if period == 'one_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">一年内</a>
+      <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">历史总计</a>
+    </div>
+    {# 统计数据 #}
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; text-align:center;">
+      <div>
+        <div style="font-size:11px; color:var(--muted);">接清</div>
+        <div style="font-size:24px; font-weight:800;">
+          {% if period == 'month' %}{{ stats.month.clear_in }}
+          {% elif period == 'half_year' %}{{ stats.half_year.clear_in }}
+          {% elif period == 'one_year' %}{{ stats.one_year.clear_in }}
+          {% else %}{{ stats.all.clear_in }}
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">炸清</div>
+        <div style="font-size:24px; font-weight:800;">
+          {% if period == 'month' %}{{ stats.month.clear_boom }}
+          {% elif period == 'half_year' %}{{ stats.half_year.clear_boom }}
+          {% elif period == 'one_year' %}{{ stats.one_year.clear_boom }}
+          {% else %}{{ stats.all.clear_boom }}
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">大金</div>
+        <div style="font-size:24px; font-weight:800;">
+          {% if period == 'month' %}{{ stats.month.big_jin }}
+          {% elif period == 'half_year' %}{{ stats.half_year.big_jin }}
+          {% elif period == 'one_year' %}{{ stats.one_year.big_jin }}
+          {% else %}{{ stats.all.big_jin }}
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">小金</div>
+        <div style="font-size:24px; font-weight:800;">
+          {% if period == 'month' %}{{ stats.month.small_jin }}
+          {% elif period == 'half_year' %}{{ stats.half_year.small_jin }}
+          {% elif period == 'one_year' %}{{ stats.one_year.small_jin }}
+          {% else %}{{ stats.all.small_jin }}
+          {% endif %}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">黄金九</div>
+        <div style="font-size:24px; font-weight:800;">
+          {% if period == 'month' %}{{ stats.month.golden_nine }}
+          {% elif period == 'half_year' %}{{ stats.half_year.golden_nine }}
+          {% elif period == 'one_year' %}{{ stats.one_year.golden_nine }}
+          {% else %}{{ stats.all.golden_nine }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if records %}
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>玩法</th>
+            <th>对手</th>
+            <th>战绩</th>
+            <th>接清</th>
+            <th>炸清</th>
+            <th>大金</th>
+            <th>小金</th>
+            <th>黄金九</th>
+            <th>犯规</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            <tr>
+              <td>{{ r.date }}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  <span class="badge-8ball">黑八</span>
+                {% else %}
+                  <span class="badge-score">追分</span>
+                {% endif %}
+              </td>
+              <td>{% if r.opponent_name %}{{ r.opponent_name }}{% else %}—{% endif %}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  {{ r.score_for }}:{{ r.score_against }}
+                {% else %}
+                  {% if r.score > 0 %}+{{ r.score }}{% else %}{{ r.score }}{% endif %}
+                {% endif %}
+              </td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_in_count }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_boom_count }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.big_jin }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.small_jin }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.golden_nine }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.foul_count }}{% else %}—{% endif %}</td>
+              <td>
+                <a class="btn" href="{% url 'diary:record_detail' r.pk %}">查看</a>
+                <a class="btn" href="{% url 'diary:record_delete' r.pk %}"
+                  style="background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);font-size:12px;padding:5px 10px;margin-left:4px;">
+                  删除
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card">
+      <p style="margin: 0;">暂无记录。点击右上角"新增当天记录"开始记录。</p>
+    </div>
+  {% endif %}
+{% endblock %}

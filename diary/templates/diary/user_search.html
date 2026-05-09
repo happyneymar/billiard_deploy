@@ -1,0 +1,29 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">查看他人记录</h1>
+  <p class="subtle">输入用户名查看该玩家的台球战绩记录（公开信息）。</p>
+
+  {% if not_found %}
+    <div class="card">
+      <p style="margin:0; color: rgba(239,68,68,0.9);">
+        未找到用户 "<strong>{{ username }}</strong>"，请确认用户名正确。
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="card" style="max-width: 480px; margin: 0 auto; text-align: center;">
+    <form action="{% url 'diary:user_search' %}" method="get">
+      <div class="field" style="text-align:left;">
+        <label>用户名</label>
+        <input type="text" name="username" placeholder="输入用户名后回车"
+          style="width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,0.08);color:var(--text);font-size:15px;outline:none;"
+          autofocus />
+      </div>
+      <div style="margin-top: 14px;">
+        <button class="btn btn-primary" type="submit">查看记录</button>
+        <a class="btn" href="{% url 'diary:record_list' %}">返回我的记录</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Database & uploads
+db.sqlite3
+db.sqlite3-journal
+media/users/*       # 用户上传的媒体文件
+!media/users/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Django
+*.log
+local_settings.py
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Static files collected (if using whitenoise or similar)
+# staticfiles/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*

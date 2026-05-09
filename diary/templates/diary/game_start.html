@@ -1,0 +1,27 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">开灯</h1>
+  <p class="subtle">输入对手名并选择游戏类型，开始实时计分。</p>
+
+  <div class="card" style="max-width: 500px; margin: 0 auto;">
+    <form method="post">
+      {% csrf_token %}
+      <div class="field" style="margin-bottom: 20px;">
+        <label for="opponent_name">对手名（可选）</label>
+        <input type="text" id="opponent_name" name="opponent_name" placeholder="例如：张三" />
+      </div>
+
+      <div class="field" style="margin-bottom: 24px;">
+        <label for="game_type">游戏类型</label>
+        <select id="game_type" name="game_type" required>
+          <option value="">请选择</option>
+          <option value="8ball">黑八</option>
+          <option value="score">追分</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%;">开始比赛</button>
+    </form>
+  </div>
+{% endblock %}

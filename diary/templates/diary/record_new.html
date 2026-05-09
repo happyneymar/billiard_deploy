@@ -1,0 +1,141 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">新增当天记录</h1>
+  <p class="subtle">填完直接保存到历史里；同一天再次保存会自动覆盖统计并追加媒体。</p>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div class="grid grid-2">
+        <div class="field">
+          <label>日期</label>
+          {% if form.date.errors %}<div class="errors">{{ form.date.errors }}</div>{% endif %}
+          {{ form.date }}
+        </div>
+
+        <div class="field">
+          <label>玩法</label>
+          {% if form.game_type.errors %}<div class="errors">{{ form.game_type.errors }}</div>{% endif %}
+          {{ form.game_type }}
+        </div>
+      </div>
+
+      {# ---------- 对手名（两模式共用） ---------- #}
+      <div class="field" style="margin-top: 14px;">
+        <label>对手名（可选）</label>
+        {% if form.opponent_name.errors %}<div class="errors">{{ form.opponent_name.errors }}</div>{% endif %}
+        {{ form.opponent_name }}
+      </div>
+
+      {# ---------- 黑八字段 ---------- #}
+      <div id="block-8ball" style="margin-top: 14px;">
+        <div class="grid grid-2">
+          <div class="field">
+            <label>比分</label>
+            <div class="grid grid-2" style="gap: 10px;">
+              <div class="field">
+                <label style="font-weight: 650; margin-bottom: 6px;">我方</label>
+                {% if form.score_for.errors %}<div class="errors">{{ form.score_for.errors }}</div>{% endif %}
+                {{ form.score_for }}
+              </div>
+              <div class="field">
+                <label style="font-weight: 650; margin-bottom: 6px;">对方</label>
+                {% if form.score_against.errors %}<div class="errors">{{ form.score_against.errors }}</div>{% endif %}
+                {{ form.score_against }}
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>接清局数</label>
+            {% if form.clear_in_count.errors %}<div class="errors">{{ form.clear_in_count.errors }}</div>{% endif %}
+            {{ form.clear_in_count }}
+          </div>
+
+          <div class="field">
+            <label>炸清局数</label>
+            {% if form.clear_boom_count.errors %}<div class="errors">{{ form.clear_boom_count.errors }}</div>{% endif %}
+            {{ form.clear_boom_count }}
+          </div>
+        </div>
+      </div>
+
+      {# ---------- 追分字段 ---------- #}
+      <div id="block-score" style="margin-top: 14px;">
+        <div class="grid grid-2">
+          <div class="field">
+            <label>大金数</label>
+            {% if form.big_jin.errors %}<div class="errors">{{ form.big_jin.errors }}</div>{% endif %}
+            {{ form.big_jin }}
+          </div>
+
+          <div class="field">
+            <label>小金数</label>
+            {% if form.small_jin.errors %}<div class="errors">{{ form.small_jin.errors }}</div>{% endif %}
+            {{ form.small_jin }}
+          </div>
+
+          <div class="field">
+            <label>黄金九数</label>
+            {% if form.golden_nine.errors %}<div class="errors">{{ form.golden_nine.errors }}</div>{% endif %}
+            {{ form.golden_nine }}
+          </div>
+
+          <div class="field">
+            <label>犯规数</label>
+            {% if form.foul_count.errors %}<div class="errors">{{ form.foul_count.errors }}</div>{% endif %}
+            {{ form.foul_count }}
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 10px; max-width: 360px;">
+          <label>得分/积分</label>
+          {% if form.score.errors %}<div class="errors">{{ form.score.errors }}</div>{% endif %}
+          {{ form.score }}
+        </div>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <label>当天评论</label>
+        {% if form.comment.errors %}<div class="errors">{{ form.comment.errors }}</div>{% endif %}
+        {{ form.comment }}
+        <div class="help">例如：状态、失误点、练习内容、对手水平等。</div>
+      </div>
+
+      <div class="field" style="margin-top: 14px;">
+        <label>上传图片/视频（可多选）</label>
+        <input type="file" name="media_files" multiple accept="image/*,video/*" />
+        <div class="help">建议单个文件不要太大（开发模式下上传大视频可能较慢）。</div>
+      </div>
+
+      <div class="footer-links">
+        <button class="btn btn-primary" type="submit">保存到历史记录</button>
+        <a class="btn" href="{% url 'diary:record_list' %}">取消</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    var TYPE_8BALL = "8ball";
+    var TYPE_SCORE = "score";
+
+    var select = document.getElementById("id_game_type");
+    var block8ball = document.getElementById("block-8ball");
+    var blockScore = document.getElementById("block-score");
+
+    function toggle() {
+      var is8ball = select.value === TYPE_8BALL;
+      block8ball.style.display = is8ball ? "" : "none";
+      blockScore.style.display = is8ball ? "none" : "";
+    }
+
+    if (select) {
+      select.addEventListener("change", toggle);
+      toggle();
+    }
+  </script>
+{% endblock %}
+

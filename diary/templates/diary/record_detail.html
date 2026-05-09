@@ -1,0 +1,163 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">记录详情</h1>
+  <p class="subtle">
+    {{ record.date }}
+    · {% if record.game_type == "8ball" %}<span class="badge-8ball">黑八</span>
+    {% else %}<span class="badge-score">追分</span>{% endif %}
+    {% if record.opponent_name %}· vs {{ record.opponent_name }}{% endif %}
+    {% if record.game_type == "8ball" %}· 比分 {{ record.score_for }}:{{ record.score_against }}{% endif %}
+  </p>
+
+  <div class="card">
+    {% if record.game_type == "8ball" %}
+      {# ---------- 黑八 ---------- #}
+      <div class="grid grid-2">
+        <div>
+          <div class="subtle">接清局数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.clear_in_count }}</div>
+        </div>
+        <div>
+          <div class="subtle">炸清局数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.clear_boom_count }}</div>
+        </div>
+      </div>
+    {% else %}
+      {# ---------- 追分 ---------- #}
+      <div class="grid grid-2">
+        <div>
+          <div class="subtle">大金数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.big_jin }}</div>
+        </div>
+        <div>
+          <div class="subtle">小金数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.small_jin }}</div>
+        </div>
+        <div>
+          <div class="subtle">黄金九数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.golden_nine }}</div>
+        </div>
+        <div>
+          <div class="subtle">犯规数</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.foul_count }}</div>
+        </div>
+        <div>
+          <div class="subtle">得分/积分</div>
+          <div style="font-size: 28px; font-weight: 800;">{{ record.score }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div style="margin-top: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div class="subtle">当天评论</div>
+        <button onclick="toggleCommentEdit()" class="btn" style="font-size: 12px; padding: 6px 12px;" id="comment-edit-btn">编辑</button>
+      </div>
+      <div id="comment-display">
+        {% if record.comment %}
+          <div style="line-height: 1.7;">{{ record.comment|linebreaksbr }}</div>
+        {% else %}
+          <div class="subtle">（无）</div>
+        {% endif %}
+      </div>
+      <form id="comment-form" method="post" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="update_comment" value="1">
+        <textarea name="comment" id="comment-textarea" style="min-height: 100px; margin-bottom: 10px;">{{ record.comment }}</textarea>
+        <div style="display: flex; gap: 8px;">
+          <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">保存</button>
+          <button type="button" onclick="toggleCommentEdit()" class="btn" style="font-size: 12px; padding: 6px 12px;">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+    <h2 class="page-title" style="font-size: 20px; margin: 0;">图片/视频</h2>
+    <button onclick="toggleMediaUpload()" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" id="media-upload-btn">上传</button>
+  </div>
+  
+  <div id="media-upload-form" style="display: none; margin-top: 12px;">
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="upload_media" value="1">
+        <div class="field">
+          <label for="media_files">选择图片或视频文件</label>
+          <input type="file" id="media_files" name="media_files" multiple accept="image/*,video/*" required>
+          <div class="help">可以同时选择多个文件</div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">上传</button>
+          <button type="button" onclick="toggleMediaUpload()" class="btn" style="font-size: 12px; padding: 6px 12px;">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if media_items %}
+    <div class="media-grid" style="margin-top: 14px;">
+      {% for m in media_items %}
+        <div class="media-item" style="position: relative;">
+          {% if m.media_type == "image" %}
+            <img src="{% url 'diary:media_serve' m.file.name %}" alt="image" />
+          {% elif m.media_type == "video" %}
+            <video controls>
+              <source src="{% url 'diary:media_serve' m.file.name %}" />
+            </video>
+          {% else %}
+            <a class="btn" href="{% url 'diary:media_serve' m.file.name %}">下载/查看文件</a>
+          {% endif %}
+          <form method="post" action="{% url 'diary:media_delete' m.pk %}" style="position: absolute; top: 8px; right: 8px;" onsubmit="return confirm('确定要删除这个文件吗？');">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="background:rgba(239,68,68,0.8);border-color:rgba(239,68,68,0.9);color:white;font-size: 11px; padding: 4px 8px;">删除</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="margin-top: 14px;">
+      <p style="margin: 0;">当天暂无媒体上传。</p>
+    </div>
+  {% endif %}
+
+  <div class="footer-links">
+    <a class="btn" href="{% url 'diary:record_list' %}">返回历史记录</a>
+    <a class="btn" href="{% url 'diary:record_delete' record.pk %}"
+      style="background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);">
+      删除此记录
+    </a>
+  </div>
+
+  <script>
+    function toggleCommentEdit() {
+      const display = document.getElementById('comment-display');
+      const form = document.getElementById('comment-form');
+      const btn = document.getElementById('comment-edit-btn');
+      
+      if (form.style.display === 'none') {
+        display.style.display = 'none';
+        form.style.display = 'block';
+        btn.textContent = '取消';
+      } else {
+        display.style.display = 'block';
+        form.style.display = 'none';
+        btn.textContent = '编辑';
+      }
+    }
+
+    function toggleMediaUpload() {
+      const form = document.getElementById('media-upload-form');
+      const btn = document.getElementById('media-upload-btn');
+      
+      if (form.style.display === 'none') {
+        form.style.display = 'block';
+        btn.textContent = '取消';
+      } else {
+        form.style.display = 'none';
+        btn.textContent = '上传';
+      }
+    }
+  </script>
+{% endblock %}

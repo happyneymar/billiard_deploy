@@ -1,0 +1,32 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1>注册</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+      <label>用户名：</label>
+      {{ form.username }}
+      {{ form.username.errors }}
+    </div>
+
+    <div>
+      <label>密码：</label>
+      {{ form.password1 }}
+      {{ form.password1.errors }}
+    </div>
+
+    <div>
+      <label>确认密码：</label>
+      {{ form.password2 }}
+      {{ form.password2.errors }}
+    </div>
+
+    <div style="margin-top: 12px;">
+      <button type="submit">创建账号</button>
+    </div>
+  </form>
+{% endblock %}
+

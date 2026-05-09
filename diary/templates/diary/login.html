@@ -1,0 +1,26 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1>登录</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+      <label>用户名：</label>
+      {{ form.username }}
+      {{ form.username.errors }}
+    </div>
+    <div>
+      <label>密码：</label>
+      {{ form.password }}
+      {{ form.password.errors }}
+    </div>
+    <div style="margin-top: 12px;">
+      <button type="submit">登录</button>
+    </div>
+    <div style="margin-top: 12px;">
+      <a href="{% url 'diary:password_reset' %}">忘记密码？</a>
+    </div>
+  </form>
+{% endblock %}
+

@@ -1,0 +1,48 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">确认删除</h1>
+  <p class="subtle">确定要删除以下这条记录吗？此操作不可恢复。</p>
+
+  <div class="card">
+    <div style="margin-bottom: 8px;">
+      <span class="subtle">日期</span>
+      <div style="font-size: 18px; font-weight: 700;">{{ record.date }}</div>
+    </div>
+    <div style="margin-bottom: 8px;">
+      <span class="subtle">玩法</span>
+      <div>
+        {% if record.game_type == "8ball" %}
+          <span class="badge-8ball">黑八</span>
+        {% else %}
+          <span class="badge-score">追分</span>
+        {% endif %}
+      </div>
+    </div>
+    <div style="margin-bottom: 8px;">
+      <span class="subtle">战绩</span>
+      <div style="font-size: 18px; font-weight: 700;">
+        {% if record.game_type == "8ball" %}
+          {{ record.score_for }}:{{ record.score_against }}
+        {% else %}
+          {% if record.score > 0 %}+{{ record.score }}{% else %}{{ record.score }}{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% if record.opponent_name %}
+      <div style="margin-bottom: 8px;">
+        <span class="subtle">对手</span>
+        <div>{{ record.opponent_name }}</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <form method="post" style="margin-top: 14px;">
+    {% csrf_token %}
+    <button class="btn" type="submit"
+      style="background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.38); color: rgba(239,68,68,0.95);">
+      确认删除
+    </button>
+    <a class="btn btn-primary" href="{% url 'diary:record_detail' record.pk %}">取消</a>
+  </form>
+{% endblock %}

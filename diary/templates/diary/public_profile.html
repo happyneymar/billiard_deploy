@@ -1,0 +1,97 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <h1 class="page-title">{{ target_user.username }} 的战绩</h1>
+  <p class="subtle">以下是 {{ target_user.username }} 的台球记录（公开信息）。</p>
+
+  {# ---------- 统计面板 ---------- #}
+  <div class="card" style="padding:14px 16px; margin-bottom:18px;">
+    {# 时间段选择标签 #}
+    <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">本月</a>
+      <a href="?period=half_year" class="btn {% if period == 'half_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">半年内</a>
+      <a href="?period=one_year" class="btn {% if period == 'one_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">一年内</a>
+      <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">历史总计</a>
+    </div>
+    {# 统计数据 #}
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; text-align:center;">
+      <div>
+        <div style="font-size:11px; color:var(--muted);">接清</div>
+        <div style="font-size:24px; font-weight:800;">{{ selected_stats.clear_in }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">炸清</div>
+        <div style="font-size:24px; font-weight:800;">{{ selected_stats.clear_boom }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">大金</div>
+        <div style="font-size:24px; font-weight:800;">{{ selected_stats.big_jin }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">小金</div>
+        <div style="font-size:24px; font-weight:800;">{{ selected_stats.small_jin }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--muted);">黄金九</div>
+        <div style="font-size:24px; font-weight:800;">{{ selected_stats.golden_nine }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if records %}
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>玩法</th>
+            <th>对手</th>
+            <th>战绩</th>
+            <th>接清</th>
+            <th>炸清</th>
+            <th>大金</th>
+            <th>小金</th>
+            <th>黄金九</th>
+            <th>犯规</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            <tr>
+              <td>{{ r.date }}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  <span class="badge-8ball">黑八</span>
+                {% else %}
+                  <span class="badge-score">追分</span>
+                {% endif %}
+              </td>
+              <td>{% if r.opponent_name %}{{ r.opponent_name }}{% else %}—{% endif %}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  {{ r.score_for }}:{{ r.score_against }}
+                {% else %}
+                  {% if r.score > 0 %}+{{ r.score }}{% else %}{{ r.score }}{% endif %}
+                {% endif %}
+              </td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_in_count }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_boom_count }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.big_jin }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.small_jin }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.golden_nine }}{% else %}—{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.foul_count }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card">
+      <p style="margin: 0;">该时间段暂无记录。</p>
+    </div>
+  {% endif %}
+
+  <div class="footer-links" style="margin-top:14px;">
+    <a class="btn" href="{% url 'diary:record_list' %}">返回我的记录</a>
+  </div>
+{% endblock %}
