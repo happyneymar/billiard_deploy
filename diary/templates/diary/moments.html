@@ -86,6 +86,27 @@
 {% endblock %}
 
 {% block content %}
+  <style>
+    .moment-comment-row {
+      display: flex;
+      align-items: stretch;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .moment-comment-action {
+      flex: 1;
+      min-height: 24px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 0;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+  </style>
+
   <div id="moments-top"></div>
   {% if not show_composer %}
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -162,9 +183,15 @@
           <div class="js-comments" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);display:{% if moment.comments.all %}grid{% else %}none{% endif %};gap:6px;">
             {% if moment.comments.all %}
               {% for comment in moment.comments.all %}
-                <div style="font-size:14px;line-height:1.5;">
+                <div class="moment-comment-row" data-comment-id="{{ comment.pk }}">
                   <a href="{% url 'diary:public_profile' comment.user.username %}?from=moments&moment={{ moment.pk }}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ comment.user.username }}：</a>
-                  <button type="button" class="js-reply-trigger" data-reply-username="{{ comment.user.username }}" style="border:0;background:transparent;color:var(--text);padding:0;font:inherit;text-align:left;cursor:pointer;">{{ comment.text }}</button>
+                  <button
+                    type="button"
+                    class="moment-comment-action js-comment-action"
+                    data-reply-username="{{ comment.user.username }}"
+                    data-user-id="{{ comment.user_id }}"
+                    data-delete-url="{% url 'diary:moment_comment_delete' comment.pk %}"
+                  >{{ comment.text }}</button>
                 </div>
               {% endfor %}
             {% endif %}
@@ -271,11 +298,11 @@
     const buildCommentItem = (comment, article) => {
       const item = document.createElement("div");
       const profileLink = document.createElement("a");
-      const replyButton = document.createElement("button");
+      const actionButton = document.createElement("button");
       const momentId = article.id.replace("moment-", "");
 
-      item.style.fontSize = "14px";
-      item.style.lineHeight = "1.5";
+      item.className = "moment-comment-row";
+      item.dataset.commentId = comment.id;
 
       profileLink.href = `${comment.profile_url}?from=moments&moment=${encodeURIComponent(momentId)}`;
       profileLink.textContent = `${comment.username}：`;
@@ -283,20 +310,15 @@
       profileLink.style.color = "var(--text)";
       profileLink.style.textDecoration = "none";
 
-      replyButton.type = "button";
-      replyButton.className = "js-reply-trigger";
-      replyButton.dataset.replyUsername = comment.username;
-      replyButton.textContent = comment.text;
-      replyButton.style.border = "0";
-      replyButton.style.background = "transparent";
-      replyButton.style.color = "var(--text)";
-      replyButton.style.padding = "0";
-      replyButton.style.font = "inherit";
-      replyButton.style.textAlign = "left";
-      replyButton.style.cursor = "pointer";
+      actionButton.type = "button";
+      actionButton.className = "moment-comment-action js-comment-action";
+      actionButton.dataset.replyUsername = comment.username;
+      actionButton.dataset.userId = comment.user_id;
+      actionButton.dataset.deleteUrl = comment.delete_url;
+      actionButton.textContent = comment.text;
 
       item.appendChild(profileLink);
-      item.appendChild(replyButton);
+      item.appendChild(actionButton);
       return item;
     };
 
@@ -326,7 +348,7 @@
 
     document.querySelectorAll(".js-comments").forEach((comments) => {
       comments.addEventListener("click", (event) => {
-        const trigger = event.target.closest(".js-reply-trigger");
+        const trigger = event.target.closest(".js-comment-action");
         if (!trigger) return;
 
         const article = comments.closest("article");
@@ -334,6 +356,29 @@
         const input = form.querySelector('input[name="text"]');
         const replyInput = form.querySelector('input[name="reply_to_username"]');
         const username = trigger.dataset.replyUsername;
+        const isMine = trigger.dataset.userId === "{{ user.id }}";
+
+        if (isMine) {
+          if (!window.confirm("删除这条评论？")) return;
+
+          const token = form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+          fetch(trigger.dataset.deleteUrl, {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": token,
+            },
+            credentials: "same-origin",
+          }).then((response) => {
+            if (!response.ok) return;
+            const row = trigger.closest(".moment-comment-row");
+            row.remove();
+            if (!comments.querySelector(".moment-comment-row")) {
+              comments.style.display = "none";
+            }
+          });
+          return;
+        }
 
         replyInput.value = username;
         input.placeholder = `回复${username}`;

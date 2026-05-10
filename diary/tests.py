@@ -28,6 +28,53 @@ class MomentCommentTests(TestCase):
         self.assertEqual(comment.text, "回复Wizard: 你好")
         self.assertEqual(response.json()["comment"]["text"], "回复Wizard: 你好")
 
+    def test_reply_to_self_is_saved_as_plain_comment(self):
+        self.client.force_login(self.author)
+
+        response = self.client.post(
+            reverse("diary:moment_comment", kwargs={"pk": self.moment.pk}),
+            {"text": "不回复自己", "reply_to_username": self.author.username},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        comment = MomentComment.objects.get()
+        self.assertEqual(comment.text, "不回复自己")
+        self.assertEqual(response.json()["comment"]["text"], "不回复自己")
+
+    def test_comment_author_can_delete_own_comment(self):
+        comment = MomentComment.objects.create(
+            moment=self.moment,
+            user=self.author,
+            text="我要删除",
+        )
+        self.client.force_login(self.author)
+
+        response = self.client.post(
+            reverse("diary:moment_comment_delete", kwargs={"pk": comment.pk}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["deleted"], True)
+        self.assertFalse(MomentComment.objects.filter(pk=comment.pk).exists())
+
+    def test_user_cannot_delete_someone_elses_comment(self):
+        comment = MomentComment.objects.create(
+            moment=self.moment,
+            user=self.reply_target,
+            text="别人的评论",
+        )
+        self.client.force_login(self.author)
+
+        response = self.client.post(
+            reverse("diary:moment_comment_delete", kwargs={"pk": comment.pk}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(MomentComment.objects.filter(pk=comment.pk).exists())
+
     def test_comment_username_links_to_public_profile(self):
         MomentComment.objects.create(
             moment=self.moment,
@@ -43,6 +90,8 @@ class MomentCommentTests(TestCase):
             reverse("diary:public_profile", kwargs={"username": self.reply_target.username}),
         )
         self.assertContains(response, "data-reply-username=\"Wizard\"")
+        self.assertContains(response, "js-comment-action")
+        self.assertContains(response, "data-delete-url=")
 
     def test_profile_from_moments_returns_to_moment_anchor(self):
         self.client.force_login(self.author)
@@ -123,6 +172,8 @@ class BattleViewTests(TestCase):
 
         self.assertContains(response, "未来球厅")
         self.assertNotContains(response, "过去球厅")
+        self.assertContains(response, reverse("diary:record_list"))
+        self.assertContains(response, "返回")
         self.assertContains(response, reverse("diary:battle_history"))
         self.assertContains(response, "约战记录")
 
@@ -196,3 +247,14 @@ class BattleViewTests(TestCase):
 
         self.assertContains(response, "在球厅有一场")
         self.assertNotContains(response, "在球厅地方")
+
+
+class GameStartViewTests(TestCase):
+    def test_game_start_has_back_button_to_record_list(self):
+        user = User.objects.create_user(username="gameuser", password="pass12345")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("diary:game_start"))
+
+        self.assertContains(response, "返回")
+        self.assertContains(response, reverse("diary:record_list"))

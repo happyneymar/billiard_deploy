@@ -1,8 +1,13 @@
 {% extends "diary/base.html" %}
 
 {% block content %}
-  <h1 class="page-title">开灯</h1>
-  <p class="subtle">输入对手名并选择游戏类型，开始实时计分。</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">开灯</h1>
+      <p class="subtle">输入对手名并选择游戏类型，开始实时计分。</p>
+    </div>
+    <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
+  </div>
 
   <div class="card" style="max-width: 500px; margin: 0 auto;">
     <form method="post">

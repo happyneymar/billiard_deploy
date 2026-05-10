@@ -497,7 +497,7 @@ def moment_comment(request, pk: int):
     if text:
         reply_to_username = request.POST.get("reply_to_username", "").strip()
         reply_to = User.objects.filter(username=reply_to_username).first()
-        if reply_to:
+        if reply_to and reply_to.id != request.user.id:
             prefix = f"回复{reply_to.username}: "
             text = f"{prefix}{text[:max(0, 500 - len(prefix))]}"
         comment = MomentComment.objects.create(moment=moment, user=request.user, text=text)
@@ -505,10 +505,16 @@ def moment_comment(request, pk: int):
             return JsonResponse(
                 {
                     "comment": {
+                        "id": comment.pk,
                         "username": comment.user.username,
+                        "user_id": comment.user_id,
                         "profile_url": reverse(
                             "diary:public_profile",
                             kwargs={"username": comment.user.username},
+                        ),
+                        "delete_url": reverse(
+                            "diary:moment_comment_delete",
+                            kwargs={"pk": comment.pk},
                         ),
                         "text": comment.text,
                     }
@@ -516,6 +522,16 @@ def moment_comment(request, pk: int):
             )
     elif request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"error": "评论内容不能为空"}, status=400)
+    return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
+
+
+@login_required
+@require_http_methods(["POST"])
+def moment_comment_delete(request, pk: int):
+    comment = get_object_or_404(MomentComment, pk=pk, user=request.user)
+    comment.delete()
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"deleted": True, "comment_id": pk})
     return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
 
 
