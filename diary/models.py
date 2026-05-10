@@ -363,3 +363,41 @@ class BattleResponse(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} joins {self.battle_id}"
+
+
+class DirectBattleRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_DECLINED = "declined"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "待处理"),
+        (STATUS_ACCEPTED, "已接受"),
+        (STATUS_DECLINED, "已拒绝"),
+    ]
+
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_direct_battles",
+    )
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_direct_battles",
+    )
+    battle_time = models.DateTimeField("约战时间")
+    location = models.CharField("地点", max_length=120)
+    note = models.TextField("备注", blank=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["battle_time", "-created_at"]
+
+    def other_user(self, user):
+        return self.to_user if self.from_user_id == user.id else self.from_user
+
+    def __str__(self) -> str:
+        return f"{self.from_user_id} -> {self.to_user_id} @ {self.battle_time:%Y-%m-%d %H:%M}"

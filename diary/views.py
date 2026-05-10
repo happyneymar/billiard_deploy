@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from diary.forms import BattleForm, DailyRecordForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
+from diary.forms import BattleForm, DailyRecordForm, DirectBattleForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
 from diary.models import (
     ALLOWED_MEDIA_EXTENSIONS,
     MAX_UPLOAD_SIZE,
@@ -25,6 +25,7 @@ from diary.models import (
     BattleResponse,
     DailyMedia,
     DailyRecord,
+    DirectBattleRequest,
     FriendRequest,
     Friendship,
     MediaFileValidator,
@@ -178,6 +179,7 @@ def record_list(request):
             "records": records,
             "stats": stats,
             "period": period,
+            "battle_notices": _build_battle_notices(request.user),
         },
     )
 
@@ -357,6 +359,7 @@ def friends(request):
         {
             "friends": friend_users,
             "pending_count": _pending_friend_request_count(request.user),
+            "direct_battle_count": _pending_direct_battle_count(request.user),
         },
     )
 
@@ -406,7 +409,10 @@ def friend_add(request):
     return render(
         request,
         "diary/friend_add.html",
-        {"pending_count": _pending_friend_request_count(request.user)},
+        {
+            "pending_count": _pending_friend_request_count(request.user),
+            "direct_battle_count": _pending_direct_battle_count(request.user),
+        },
     )
 
 
@@ -459,6 +465,94 @@ def friend_request_decline(request, pk: int):
     friend_request.save(update_fields=["status", "updated_at"])
     messages.info(request, f"已拒绝 {friend_request.from_user.username} 的好友申请。")
     return redirect("diary:friend_requests")
+
+
+def _pending_direct_battle_count(user):
+    if not user.is_authenticated:
+        return 0
+    return DirectBattleRequest.objects.filter(
+        to_user=user,
+        status=DirectBattleRequest.STATUS_PENDING,
+    ).count()
+
+
+@login_required
+def direct_battle_new(request, username: str):
+    friend = get_object_or_404(User, username=username)
+    if not Friendship.are_friends(request.user, friend):
+        messages.error(request, "只能向好友发起单独约战。")
+        return redirect("diary:friends")
+
+    if request.method == "POST":
+        form = DirectBattleForm(request.POST)
+        if form.is_valid():
+            battle = form.save(commit=False)
+            battle.from_user = request.user
+            battle.to_user = friend
+            battle.save()
+            messages.success(request, f"已向 {friend.username} 发起约战。")
+            return redirect("diary:friends")
+    else:
+        form = DirectBattleForm()
+
+    return render(
+        request,
+        "diary/direct_battle_new.html",
+        {
+            "form": form,
+            "friend": friend,
+        },
+    )
+
+
+@login_required
+def user_messages(request):
+    direct_battles = (
+        DirectBattleRequest.objects.filter(
+            to_user=request.user,
+            status=DirectBattleRequest.STATUS_PENDING,
+        )
+        .select_related("from_user")
+        .order_by("battle_time", "-created_at")
+    )
+    return render(
+        request,
+        "diary/messages.html",
+        {
+            "direct_battles": direct_battles,
+            "direct_battle_count": direct_battles.count(),
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def direct_battle_accept(request, pk: int):
+    battle = get_object_or_404(
+        DirectBattleRequest,
+        pk=pk,
+        to_user=request.user,
+        status=DirectBattleRequest.STATUS_PENDING,
+    )
+    battle.status = DirectBattleRequest.STATUS_ACCEPTED
+    battle.save(update_fields=["status", "updated_at"])
+    messages.success(request, f"已接受 {battle.from_user.username} 的约战。")
+    return redirect("diary:messages")
+
+
+@login_required
+@require_http_methods(["POST"])
+def direct_battle_decline(request, pk: int):
+    battle = get_object_or_404(
+        DirectBattleRequest,
+        pk=pk,
+        to_user=request.user,
+        status=DirectBattleRequest.STATUS_PENDING,
+    )
+    battle.status = DirectBattleRequest.STATUS_DECLINED
+    battle.save(update_fields=["status", "updated_at"])
+    messages.info(request, f"已拒绝 {battle.from_user.username} 的约战。")
+    return redirect("diary:messages")
 
 
 def public_profile(request, username: str):
@@ -731,8 +825,24 @@ def _build_battle_notices(user):
             names = [battle.user.username]
         if not names:
             continue
+        local_time = timezone.localtime(battle.battle_time)
         notices.append(
-            f"您今日{timezone.localtime(battle.battle_time).strftime('%H:%M')}在{battle.location}有一场和{', '.join(names)}的约战"
+            f"您{local_time.strftime('%m月%d日%H:%M')}在{battle.location}有一场和{', '.join(names)}的约战"
+        )
+    direct_battles = (
+        DirectBattleRequest.objects.filter(
+            status=DirectBattleRequest.STATUS_ACCEPTED,
+            battle_time__gte=now,
+        )
+        .filter(Q(from_user=user) | Q(to_user=user))
+        .select_related("from_user", "to_user")
+        .order_by("battle_time")
+    )
+    for battle in direct_battles:
+        opponent = battle.other_user(user)
+        local_time = timezone.localtime(battle.battle_time)
+        notices.append(
+            f"您{local_time.strftime('%m月%d日%H:%M')}在{battle.location}有一场和{opponent.username}的约战"
         )
     return notices
 
@@ -799,6 +909,29 @@ def battle_history(request):
         "diary/battle_history.html",
         {
             "battles": battle_list,
+        },
+    )
+
+
+@login_required
+def battle_created(request):
+    public_battles = (
+        BattleRequest.objects.filter(user=request.user)
+        .prefetch_related("responses__user")
+        .annotate(response_count=Count("responses", distinct=True))
+        .order_by("-battle_time", "-created_at")
+    )
+    direct_battles = (
+        DirectBattleRequest.objects.filter(from_user=request.user)
+        .select_related("to_user")
+        .order_by("-battle_time", "-created_at")
+    )
+    return render(
+        request,
+        "diary/battle_created.html",
+        {
+            "public_battles": public_battles,
+            "direct_battles": direct_battles,
         },
     )
 

@@ -1,0 +1,39 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">消息</h1>
+      <p class="subtle">这里会显示好友发来的点对点约战请求。</p>
+    </div>
+    <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
+  </div>
+
+  <div class="grid" style="gap:14px;">
+    {% for battle in direct_battles %}
+      <article class="card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:18px;font-weight:850;margin-bottom:6px;">{{ battle.battle_time|date:"Y-m-d H:i" }} · {{ battle.location }}</div>
+          <p style="margin:0;color:var(--muted);">来自：{{ battle.from_user.username }}</p>
+          {% if battle.note %}
+            <p style="margin:10px 0 0;line-height:1.65;white-space:pre-wrap;">{{ battle.note }}</p>
+          {% endif %}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <form method="post" action="{% url 'diary:direct_battle_accept' battle.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit">接受</button>
+          </form>
+          <form method="post" action="{% url 'diary:direct_battle_decline' battle.pk %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">拒绝</button>
+          </form>
+        </div>
+      </article>
+    {% empty %}
+      <div class="card">
+        <p style="margin:0;">暂无消息。</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

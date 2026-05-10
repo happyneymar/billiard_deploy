@@ -9,6 +9,7 @@ from diary.models import (
     BattleRequest,
     BattleResponse,
     DailyRecord,
+    DirectBattleRequest,
     FriendRequest,
     Friendship,
     Moment,
@@ -236,6 +237,8 @@ class BattleViewTests(TestCase):
         self.assertContains(response, "返回")
         self.assertContains(response, reverse("diary:battle_history"))
         self.assertContains(response, "约战记录")
+        self.assertContains(response, reverse("diary:battle_created"))
+        self.assertContains(response, "我发起的")
 
     def test_battle_history_lists_finished_battles_i_created_or_joined(self):
         created_by_me = BattleRequest.objects.create(
@@ -306,7 +309,33 @@ class BattleViewTests(TestCase):
         response = self.client.get(reverse("diary:battles"))
 
         self.assertContains(response, "在球厅有一场")
+        self.assertNotContains(response, "今日")
         self.assertNotContains(response, "在球厅地方")
+
+    def test_created_battles_page_lists_public_and_direct_battles_i_started(self):
+        Friendship.create_pair(self.user, self.other)
+        public_battle = BattleRequest.objects.create(
+            user=self.user,
+            battle_time=self.now + timedelta(hours=2),
+            location="大厅球厅",
+            player_count=2,
+        )
+        direct_battle = DirectBattleRequest.objects.create(
+            from_user=self.user,
+            to_user=self.other,
+            battle_time=self.now + timedelta(hours=3),
+            location="好友球厅",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:battle_created"))
+
+        self.assertContains(response, "大厅球厅")
+        self.assertContains(response, "好友球厅")
+        self.assertContains(response, self.other.username)
+        self.assertContains(response, reverse("diary:battles"))
+        self.assertEqual(public_battle.user, self.user)
+        self.assertEqual(direct_battle.from_user, self.user)
 
 
 class FriendViewTests(TestCase):
@@ -321,7 +350,9 @@ class FriendViewTests(TestCase):
         response = self.client.get(reverse("diary:record_list"))
 
         self.assertContains(response, reverse("diary:friends"))
+        self.assertContains(response, reverse("diary:messages"))
         self.assertContains(response, "好友")
+        self.assertContains(response, "消息")
         self.assertNotContains(response, "查看他人记录")
         self.assertNotContains(response, "查询")
 
@@ -337,6 +368,7 @@ class FriendViewTests(TestCase):
         self.assertContains(response, reverse("diary:friend_add"))
         self.assertContains(response, reverse("diary:friend_requests"))
         self.assertContains(response, f"{reverse('diary:public_profile', kwargs={'username': self.other.username})}?from=friends")
+        self.assertContains(response, reverse("diary:direct_battle_new", kwargs={"username": self.other.username}))
         self.assertContains(response, self.other.username)
 
     def test_profile_from_friends_returns_to_friends_page(self):
@@ -390,6 +422,64 @@ class FriendViewTests(TestCase):
         friend_request.refresh_from_db()
         self.assertEqual(friend_request.status, FriendRequest.STATUS_DECLINED)
         self.assertFalse(Friendship.are_friends(self.user, self.other))
+
+    def test_friend_can_receive_direct_battle_request_and_accept_it(self):
+        Friendship.create_pair(self.user, self.other)
+        battle_time = timezone.now() + timedelta(days=1)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:direct_battle_new", kwargs={"username": self.other.username}),
+            {
+                "battle_time": battle_time.strftime("%Y-%m-%dT%H:%M"),
+                "location": "单独球厅",
+                "note": "点对点约战",
+            },
+        )
+
+        self.assertRedirects(response, reverse("diary:friends"))
+        direct_battle = DirectBattleRequest.objects.get(
+            from_user=self.user,
+            to_user=self.other,
+        )
+        self.assertEqual(direct_battle.status, DirectBattleRequest.STATUS_PENDING)
+
+        self.client.force_login(self.other)
+        response = self.client.get(reverse("diary:messages"))
+        self.assertContains(response, "单独球厅")
+        self.assertContains(response, self.user.username)
+        self.assertContains(response, reverse("diary:direct_battle_accept", kwargs={"pk": direct_battle.pk}))
+
+        response = self.client.post(
+            reverse("diary:direct_battle_accept", kwargs={"pk": direct_battle.pk})
+        )
+
+        self.assertRedirects(response, reverse("diary:messages"))
+        direct_battle.refresh_from_db()
+        self.assertEqual(direct_battle.status, DirectBattleRequest.STATUS_ACCEPTED)
+
+        response = self.client.get(reverse("diary:record_list"))
+        self.assertContains(response, "单独球厅")
+        self.assertContains(response, self.user.username)
+        self.assertContains(response, "约战")
+
+        response = self.client.get(reverse("diary:battles"))
+        self.assertContains(response, "单独球厅")
+        self.assertContains(response, self.user.username)
+
+    def test_direct_battle_requires_friendship(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:direct_battle_new", kwargs={"username": self.other.username}),
+            {
+                "battle_time": (timezone.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
+                "location": "陌生人球厅",
+            },
+        )
+
+        self.assertRedirects(response, reverse("diary:friends"))
+        self.assertFalse(DirectBattleRequest.objects.exists())
 
 
 class GameStartViewTests(TestCase):

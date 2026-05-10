@@ -7,6 +7,7 @@
       <p class="subtle">发布约战请求，或加入其他人的台球约战。</p>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a class="btn" href="{% url 'diary:battle_created' %}">我发起的</a>
       <a class="btn" href="{% url 'diary:battle_history' %}">约战记录</a>
       <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
     </div>

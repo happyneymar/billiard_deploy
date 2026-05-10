@@ -4,6 +4,14 @@
   <h1 class="page-title">你的历史记录</h1>
   <p class="subtle">按日期保存黑八/追分战绩、清台局数、得分，以及当天的图片/视频与评论。</p>
 
+  {% if battle_notices %}
+    <div class="card" style="margin-bottom:18px;display:grid;gap:8px;">
+      {% for notice in battle_notices %}
+        <p style="margin:0;font-weight:750;">{{ notice }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {# ---------- 统计面板 ---------- #}
   <div class="card" style="padding:14px 16px; margin-bottom:18px;">
     {# 时间段选择标签 #}

@@ -1,0 +1,38 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">向 {{ friend.username }} 发起约战</h1>
+      <p class="subtle">填写时间和地点，向这位好友发送单独约战请求。</p>
+    </div>
+    <a class="btn" href="{% url 'diary:friends' %}">返回</a>
+  </div>
+
+  <div class="card">
+    <form method="post" class="grid" style="gap:12px;">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="{{ form.battle_time.id_for_label }}">时间</label>
+          {{ form.battle_time }}
+          {{ form.battle_time.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.location.id_for_label }}">地点</label>
+          {{ form.location }}
+          {{ form.location.errors }}
+        </div>
+      </div>
+      <div class="field">
+        <label for="{{ form.note.id_for_label }}">备注</label>
+        {{ form.note }}
+        {{ form.note.errors }}
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" type="submit">发送约战请求</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

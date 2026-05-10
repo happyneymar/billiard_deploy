@@ -3,7 +3,7 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.validators import MaxLengthValidator
 
-from diary.models import BattleRequest, DailyRecord, Moment
+from diary.models import BattleRequest, DailyRecord, DirectBattleRequest, Moment
 
 
 
@@ -193,6 +193,31 @@ class BattleForm(forms.ModelForm):
         import re
         note = self.cleaned_data.get("note", "")
         return re.sub(r"<[^>]+>", "", note).strip()[:500]
+
+
+class DirectBattleForm(forms.ModelForm):
+    class Meta:
+        model = DirectBattleRequest
+        fields = ["battle_time", "location", "note"]
+        widgets = {
+            "battle_time": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "location": forms.TextInput(attrs={"maxlength": "120", "placeholder": "例如：学校台球厅"}),
+            "note": forms.Textarea(attrs={"rows": 3, "maxlength": "500", "placeholder": "补充玩法、联系方式等"}),
+        }
+
+    def clean_location(self):
+        import re
+        location = self.cleaned_data.get("location", "")
+        location = re.sub(r"<[^>]+>", "", location).strip()[:120]
+        if not location:
+            raise forms.ValidationError("请填写地点")
+        return location
+
+    def clean_note(self):
+        import re
+        note = self.cleaned_data.get("note", "")
+        return re.sub(r"<[^>]+>", "", note).strip()[:500]
+
 
 class MomentForm(forms.ModelForm):
     text = forms.CharField(
