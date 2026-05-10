@@ -1,0 +1,26 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">给 {{ friend.username }} 发私信</h1>
+      <p class="subtle">填写消息内容，对方会在消息栏里看到这条私信。</p>
+    </div>
+    <a class="btn" href="{% url 'diary:friends' %}">返回</a>
+  </div>
+
+  <div class="card">
+    <form method="post" class="grid" style="gap:12px;">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="field">
+        <label for="{{ form.text.id_for_label }}">私信内容</label>
+        {{ form.text }}
+        {{ form.text.errors }}
+      </div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" type="submit">发送私信</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

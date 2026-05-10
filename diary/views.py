@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from diary.forms import BattleForm, DailyRecordForm, DirectBattleForm, MomentForm, PasswordResetVerifyForm, SimpleUserCreationForm, TeacherVerifyForm
+from diary.forms import BattleForm, DailyRecordForm, DirectBattleForm, MomentForm, PasswordResetVerifyForm, PrivateMessageForm, SimpleUserCreationForm, TeacherVerifyForm
 from diary.models import (
     ALLOWED_MEDIA_EXTENSIONS,
     MAX_UPLOAD_SIZE,
@@ -33,6 +33,7 @@ from diary.models import (
     MomentComment,
     MomentLike,
     MomentMedia,
+    PrivateMessage,
     validate_secure_filename,
 )
 
@@ -506,6 +507,35 @@ def direct_battle_new(request, username: str):
 
 
 @login_required
+def private_message_new(request, username: str):
+    friend = get_object_or_404(User, username=username)
+    if not Friendship.are_friends(request.user, friend):
+        messages.error(request, "只能给好友发送私信。")
+        return redirect("diary:friends")
+
+    if request.method == "POST":
+        form = PrivateMessageForm(request.POST)
+        if form.is_valid():
+            private_message = form.save(commit=False)
+            private_message.from_user = request.user
+            private_message.to_user = friend
+            private_message.save()
+            messages.success(request, f"已向 {friend.username} 发送私信。")
+            return redirect("diary:friends")
+    else:
+        form = PrivateMessageForm()
+
+    return render(
+        request,
+        "diary/private_message_new.html",
+        {
+            "form": form,
+            "friend": friend,
+        },
+    )
+
+
+@login_required
 def user_messages(request):
     direct_battles = (
         DirectBattleRequest.objects.filter(
@@ -515,11 +545,24 @@ def user_messages(request):
         .select_related("from_user")
         .order_by("battle_time", "-created_at")
     )
+    private_messages = list(
+        PrivateMessage.objects.filter(to_user=request.user)
+        .select_related("from_user")
+        .order_by("-created_at")
+    )
+    unread_private_message_ids = [
+        private_message.id
+        for private_message in private_messages
+        if not private_message.is_read
+    ]
+    if unread_private_message_ids:
+        PrivateMessage.objects.filter(id__in=unread_private_message_ids).update(is_read=True)
     return render(
         request,
         "diary/messages.html",
         {
             "direct_battles": direct_battles,
+            "private_messages": private_messages,
             "direct_battle_count": direct_battles.count(),
         },
     )

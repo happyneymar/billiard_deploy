@@ -12,6 +12,7 @@ from diary.models import (
     MomentComment,
     MomentLike,
     MomentMedia,
+    PrivateMessage,
 )
 
 
@@ -104,3 +105,10 @@ class DirectBattleRequestAdmin(admin.ModelAdmin):
     list_display = ["id", "from_user", "to_user", "battle_time", "location", "status", "created_at"]
     list_filter = ["status", "battle_time", "created_at"]
     search_fields = ["from_user__username", "to_user__username", "location", "note"]
+
+
+@admin.register(PrivateMessage)
+class PrivateMessageAdmin(admin.ModelAdmin):
+    list_display = ["id", "from_user", "to_user", "is_read", "created_at"]
+    list_filter = ["is_read", "created_at"]
+    search_fields = ["from_user__username", "to_user__username", "text"]

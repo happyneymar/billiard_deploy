@@ -3,7 +3,7 @@ from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.validators import MaxLengthValidator
 
-from diary.models import BattleRequest, DailyRecord, DirectBattleRequest, Moment
+from diary.models import BattleRequest, DailyRecord, DirectBattleRequest, Moment, PrivateMessage
 
 
 
@@ -217,6 +217,29 @@ class DirectBattleForm(forms.ModelForm):
         import re
         note = self.cleaned_data.get("note", "")
         return re.sub(r"<[^>]+>", "", note).strip()[:500]
+
+
+class PrivateMessageForm(forms.ModelForm):
+    class Meta:
+        model = PrivateMessage
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "maxlength": "1000",
+                    "placeholder": "输入要发送给好友的消息...",
+                }
+            ),
+        }
+
+    def clean_text(self):
+        import re
+        text = self.cleaned_data.get("text", "")
+        text = re.sub(r"<[^>]+>", "", text).strip()[:1000]
+        if not text:
+            raise forms.ValidationError("请填写私信内容")
+        return text
 
 
 class MomentForm(forms.ModelForm):

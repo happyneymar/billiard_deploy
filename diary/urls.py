@@ -22,6 +22,7 @@ urlpatterns = [
     path("friends/requests/", views.friend_requests, name="friend_requests"),
     path("friends/requests/<int:pk>/accept/", views.friend_request_accept, name="friend_request_accept"),
     path("friends/requests/<int:pk>/decline/", views.friend_request_decline, name="friend_request_decline"),
+    path("friends/<str:username>/message/", views.private_message_new, name="private_message_new"),
     path("friends/<str:username>/battle/", views.direct_battle_new, name="direct_battle_new"),
     path("messages/", views.user_messages, name="messages"),
     path("messages/direct-battles/<int:pk>/accept/", views.direct_battle_accept, name="direct_battle_accept"),

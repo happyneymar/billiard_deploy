@@ -4,12 +4,27 @@
   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <div>
       <h1 class="page-title" style="margin-bottom:6px;">消息</h1>
-      <p class="subtle">这里会显示好友发来的点对点约战请求。</p>
+      <p class="subtle">这里会显示好友发来的私信和点对点约战请求。</p>
     </div>
     <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
   </div>
 
   <div class="grid" style="gap:14px;">
+    {% for private_message in private_messages %}
+      <article class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:18px;font-weight:850;margin-bottom:6px;">{{ private_message.from_user.username }} 的私信</div>
+            <p style="margin:0;color:var(--muted);">{{ private_message.created_at|date:"Y-m-d H:i" }}</p>
+          </div>
+          {% if not private_message.is_read %}
+            <span class="pill"><strong>未读</strong></span>
+          {% endif %}
+        </div>
+        <p style="margin:12px 0 0;line-height:1.65;white-space:pre-wrap;">{{ private_message.text }}</p>
+      </article>
+    {% endfor %}
+
     {% for battle in direct_battles %}
       <article class="card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div>
@@ -30,10 +45,12 @@
           </form>
         </div>
       </article>
-    {% empty %}
+    {% endfor %}
+
+    {% if not private_messages and not direct_battles %}
       <div class="card">
         <p style="margin:0;">暂无消息。</p>
       </div>
-    {% endfor %}
+    {% endif %}
   </div>
 {% endblock %}

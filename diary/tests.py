@@ -15,6 +15,7 @@ from diary.models import (
     Moment,
     MomentComment,
     MomentLike,
+    PrivateMessage,
 )
 
 
@@ -372,12 +373,23 @@ class FriendViewTests(TestCase):
             location="已处理球厅",
             status=DirectBattleRequest.STATUS_ACCEPTED,
         )
+        PrivateMessage.objects.create(
+            from_user=self.third,
+            to_user=self.user,
+            text="一条未读私信",
+        )
+        PrivateMessage.objects.create(
+            from_user=self.third,
+            to_user=self.user,
+            text="一条已读私信",
+            is_read=True,
+        )
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("diary:record_list"))
 
-        self.assertContains(response, "消息（2）")
-        self.assertNotContains(response, "消息（3）")
+        self.assertContains(response, "消息（3）")
+        self.assertNotContains(response, "消息（4）")
 
     def test_friends_page_shows_friend_request_count_and_friend_links(self):
         Friendship.create_pair(self.user, self.other)
@@ -391,6 +403,7 @@ class FriendViewTests(TestCase):
         self.assertContains(response, reverse("diary:friend_add"))
         self.assertContains(response, reverse("diary:friend_requests"))
         self.assertContains(response, f"{reverse('diary:public_profile', kwargs={'username': self.other.username})}?from=friends")
+        self.assertContains(response, reverse("diary:private_message_new", kwargs={"username": self.other.username}))
         self.assertContains(response, reverse("diary:direct_battle_new", kwargs={"username": self.other.username}))
         self.assertContains(response, self.other.username)
 
@@ -503,6 +516,47 @@ class FriendViewTests(TestCase):
 
         self.assertRedirects(response, reverse("diary:friends"))
         self.assertFalse(DirectBattleRequest.objects.exists())
+
+    def test_friend_can_receive_private_message_in_messages_page(self):
+        Friendship.create_pair(self.user, self.other)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:private_message_new", kwargs={"username": self.other.username}),
+            {"text": "今晚练球吗？"},
+        )
+
+        self.assertRedirects(response, reverse("diary:friends"))
+        private_message = PrivateMessage.objects.get(
+            from_user=self.user,
+            to_user=self.other,
+        )
+        self.assertEqual(private_message.text, "今晚练球吗？")
+        self.assertFalse(private_message.is_read)
+
+        self.client.force_login(self.other)
+        response = self.client.get(reverse("diary:record_list"))
+        self.assertContains(response, "消息（1）")
+
+        response = self.client.get(reverse("diary:messages"))
+        self.assertContains(response, self.user.username)
+        self.assertContains(response, "今晚练球吗？")
+        private_message.refresh_from_db()
+        self.assertTrue(private_message.is_read)
+
+        response = self.client.get(reverse("diary:record_list"))
+        self.assertNotContains(response, "消息（")
+
+    def test_private_message_requires_friendship(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:private_message_new", kwargs={"username": self.other.username}),
+            {"text": "不能发给非好友"},
+        )
+
+        self.assertRedirects(response, reverse("diary:friends"))
+        self.assertFalse(PrivateMessage.objects.exists())
 
 
 class GameStartViewTests(TestCase):

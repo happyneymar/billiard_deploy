@@ -401,3 +401,25 @@ class DirectBattleRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.from_user_id} -> {self.to_user_id} @ {self.battle_time:%Y-%m-%d %H:%M}"
+
+
+class PrivateMessage(models.Model):
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_private_messages",
+    )
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_private_messages",
+    )
+    text = models.TextField("私信内容")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.from_user_id} -> {self.to_user_id}: {self.text[:24]}"
