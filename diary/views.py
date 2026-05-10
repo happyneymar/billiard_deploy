@@ -336,6 +336,16 @@ def public_profile(request, username: str):
     if period not in {"month", "half_year", "one_year", "all"}:
         period = "month"
 
+    back_label = "返回我的记录"
+    back_url = reverse("diary:record_list")
+    from_moments = request.GET.get("from") == "moments"
+    moment_id = request.GET.get("moment", "")
+    if from_moments:
+        back_label = "返回朋友圈"
+        back_url = reverse("diary:moments")
+        if moment_id.isdigit():
+            back_url = f"{back_url}#moment-{moment_id}"
+
     stats = _build_stats(base_qs)
     records = _filter_by_period(base_qs, period).order_by("-date", "-created_at")
     return render(
@@ -347,6 +357,10 @@ def public_profile(request, username: str):
             "stats": stats,
             "period": period,
             "selected_stats": stats[period],
+            "profile_back_label": back_label,
+            "profile_back_url": back_url,
+            "profile_from_moments": from_moments,
+            "profile_moment_id": moment_id if moment_id.isdigit() else "",
         },
     )
 
@@ -382,7 +396,7 @@ def moments_feed(request):
                             media_type=MomentMedia.guess_media_type(uploaded),
                         )
                 messages.success(request, "朋友圈已发布。")
-                return redirect("diary:moments")
+                return redirect(f"{reverse('diary:moments')}?posted=1#moments-top")
     else:
         form = MomentForm()
 

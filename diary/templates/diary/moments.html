@@ -1,6 +1,7 @@
 {% extends "diary/base.html" %}
 
 {% block content %}
+  <div id="moments-top"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
     <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
     <a class="btn" href="{{ back_url }}">{{ back_label }}</a>
@@ -34,12 +35,12 @@
   <div class="moments-feed" style="display:grid; gap:14px;">
     {% for moment in moments %}
       <article id="moment-{{ moment.pk }}" class="card" style="display:grid; grid-template-columns:44px 1fr; gap:12px; padding:14px 16px;">
-        <a href="{% url 'diary:public_profile' moment.user.username %}" style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(34,197,94,0.9));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;text-decoration:none;">
+        <a href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}" style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(34,197,94,0.9));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;text-decoration:none;">
           {{ moment.user.username|first|upper }}
         </a>
         <div style="min-width:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;">
-            <a href="{% url 'diary:public_profile' moment.user.username %}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ moment.user.username }}</a>
+            <a href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ moment.user.username }}</a>
             <span style="font-size:12px;color:var(--muted);white-space:nowrap;">{{ moment.created_at|date:"Y-m-d H:i" }}</span>
           </div>
 
@@ -75,7 +76,7 @@
             {% if moment.comments.all %}
               {% for comment in moment.comments.all %}
                 <div style="font-size:14px;line-height:1.5;">
-                  <a href="{% url 'diary:public_profile' comment.user.username %}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ comment.user.username }}：</a>
+                  <a href="{% url 'diary:public_profile' comment.user.username %}?from=moments&moment={{ moment.pk }}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ comment.user.username }}：</a>
                   <button type="button" class="js-reply-trigger" data-reply-username="{{ comment.user.username }}" style="border:0;background:transparent;color:var(--text);padding:0;font:inherit;text-align:left;cursor:pointer;">{{ comment.text }}</button>
                 </div>
               {% endfor %}
@@ -98,6 +99,29 @@
   </div>
 
   <script>
+    {% if request.GET.posted %}
+      if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+      }
+
+      const keepMomentsAtTop = () => {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo(0, 0);
+      };
+
+      keepMomentsAtTop();
+      requestAnimationFrame(keepMomentsAtTop);
+      setTimeout(keepMomentsAtTop, 0);
+      setTimeout(keepMomentsAtTop, 80);
+      setTimeout(keepMomentsAtTop, 250);
+      window.addEventListener("pageshow", keepMomentsAtTop);
+      window.addEventListener("load", () => {
+        keepMomentsAtTop();
+        history.replaceState(null, "", window.location.pathname);
+      });
+    {% endif %}
+
     document.querySelectorAll(".js-like-form").forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -126,15 +150,16 @@
       input.placeholder = "评论";
     };
 
-    const buildCommentItem = (comment) => {
+    const buildCommentItem = (comment, article) => {
       const item = document.createElement("div");
       const profileLink = document.createElement("a");
       const replyButton = document.createElement("button");
+      const momentId = article.id.replace("moment-", "");
 
       item.style.fontSize = "14px";
       item.style.lineHeight = "1.5";
 
-      profileLink.href = comment.profile_url;
+      profileLink.href = `${comment.profile_url}?from=moments&moment=${encodeURIComponent(momentId)}`;
       profileLink.textContent = `${comment.username}：`;
       profileLink.style.fontWeight = "800";
       profileLink.style.color = "var(--text)";
@@ -171,8 +196,9 @@
         });
         if (!response.ok) return;
         const result = await response.json();
-        const comments = form.closest("article").querySelector(".js-comments");
-        const item = buildCommentItem(result.comment);
+        const article = form.closest("article");
+        const comments = article.querySelector(".js-comments");
+        const item = buildCommentItem(result.comment, article);
         comments.appendChild(item);
         comments.style.display = "grid";
         input.value = "";

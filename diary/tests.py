@@ -40,3 +40,37 @@ class MomentCommentTests(TestCase):
             reverse("diary:public_profile", kwargs={"username": self.reply_target.username}),
         )
         self.assertContains(response, "data-reply-username=\"Wizard\"")
+
+    def test_profile_from_moments_returns_to_moment_anchor(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(
+            reverse("diary:public_profile", kwargs={"username": self.reply_target.username}),
+            {"from": "moments", "moment": str(self.moment.pk)},
+        )
+
+        self.assertContains(response, "返回朋友圈")
+        self.assertContains(response, f"{reverse('diary:moments')}#moment-{self.moment.pk}")
+        self.assertNotContains(response, "返回我的记录")
+
+    def test_profile_from_search_keeps_record_back_button(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(
+            reverse("diary:public_profile", kwargs={"username": self.reply_target.username})
+        )
+
+        self.assertContains(response, "返回我的记录")
+        self.assertContains(response, reverse("diary:record_list"))
+        self.assertNotContains(response, "返回朋友圈")
+
+    def test_posting_moment_redirects_to_top_marker(self):
+        self.client.force_login(self.author)
+
+        response = self.client.post(reverse("diary:moments"), {"text": "新朋友圈"})
+
+        self.assertRedirects(
+            response,
+            f"{reverse('diary:moments')}?posted=1#moments-top",
+            fetch_redirect_response=False,
+        )
