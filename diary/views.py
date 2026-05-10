@@ -481,12 +481,21 @@ def moment_comment(request, pk: int):
     moment = get_object_or_404(Moment, pk=pk)
     text = re.sub(r"<[^>]+>", "", request.POST.get("text", "")).strip()[:500]
     if text:
+        reply_to_username = request.POST.get("reply_to_username", "").strip()
+        reply_to = User.objects.filter(username=reply_to_username).first()
+        if reply_to:
+            prefix = f"回复{reply_to.username}: "
+            text = f"{prefix}{text[:max(0, 500 - len(prefix))]}"
         comment = MomentComment.objects.create(moment=moment, user=request.user, text=text)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse(
                 {
                     "comment": {
                         "username": comment.user.username,
+                        "profile_url": reverse(
+                            "diary:public_profile",
+                            kwargs={"username": comment.user.username},
+                        ),
                         "text": comment.text,
                     }
                 }

@@ -75,7 +75,8 @@
             {% if moment.comments.all %}
               {% for comment in moment.comments.all %}
                 <div style="font-size:14px;line-height:1.5;">
-                  <strong>{{ comment.user.username }}：</strong>{{ comment.text }}
+                  <a href="{% url 'diary:public_profile' comment.user.username %}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ comment.user.username }}：</a>
+                  <button type="button" class="js-reply-trigger" data-reply-username="{{ comment.user.username }}" style="border:0;background:transparent;color:var(--text);padding:0;font:inherit;text-align:left;cursor:pointer;">{{ comment.text }}</button>
                 </div>
               {% endfor %}
             {% endif %}
@@ -83,6 +84,7 @@
 
           <form class="js-comment-form" method="post" action="{% url 'diary:moment_comment' moment.pk %}" style="display:flex;gap:8px;margin-top:10px;">
             {% csrf_token %}
+            <input type="hidden" name="reply_to_username" value="">
             <input type="text" name="text" maxlength="500" placeholder="评论" style="border-radius:999px;padding:8px 12px;">
             <button class="btn" type="submit" style="font-size:12px;padding:7px 12px;white-space:nowrap;">发送</button>
           </form>
@@ -117,6 +119,44 @@
       });
     });
 
+    const resetReplyState = (form) => {
+      const input = form.querySelector('input[name="text"]');
+      const replyInput = form.querySelector('input[name="reply_to_username"]');
+      replyInput.value = "";
+      input.placeholder = "评论";
+    };
+
+    const buildCommentItem = (comment) => {
+      const item = document.createElement("div");
+      const profileLink = document.createElement("a");
+      const replyButton = document.createElement("button");
+
+      item.style.fontSize = "14px";
+      item.style.lineHeight = "1.5";
+
+      profileLink.href = comment.profile_url;
+      profileLink.textContent = `${comment.username}：`;
+      profileLink.style.fontWeight = "800";
+      profileLink.style.color = "var(--text)";
+      profileLink.style.textDecoration = "none";
+
+      replyButton.type = "button";
+      replyButton.className = "js-reply-trigger";
+      replyButton.dataset.replyUsername = comment.username;
+      replyButton.textContent = comment.text;
+      replyButton.style.border = "0";
+      replyButton.style.background = "transparent";
+      replyButton.style.color = "var(--text)";
+      replyButton.style.padding = "0";
+      replyButton.style.font = "inherit";
+      replyButton.style.textAlign = "left";
+      replyButton.style.cursor = "pointer";
+
+      item.appendChild(profileLink);
+      item.appendChild(replyButton);
+      return item;
+    };
+
     document.querySelectorAll(".js-comment-form").forEach((form) => {
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -132,16 +172,28 @@
         if (!response.ok) return;
         const result = await response.json();
         const comments = form.closest("article").querySelector(".js-comments");
-        const item = document.createElement("div");
-        const name = document.createElement("strong");
-        item.style.fontSize = "14px";
-        item.style.lineHeight = "1.5";
-        name.textContent = `${result.comment.username}：`;
-        item.appendChild(name);
-        item.append(document.createTextNode(result.comment.text));
+        const item = buildCommentItem(result.comment);
         comments.appendChild(item);
         comments.style.display = "grid";
         input.value = "";
+        resetReplyState(form);
+      });
+    });
+
+    document.querySelectorAll(".js-comments").forEach((comments) => {
+      comments.addEventListener("click", (event) => {
+        const trigger = event.target.closest(".js-reply-trigger");
+        if (!trigger) return;
+
+        const article = comments.closest("article");
+        const form = article.querySelector(".js-comment-form");
+        const input = form.querySelector('input[name="text"]');
+        const replyInput = form.querySelector('input[name="reply_to_username"]');
+        const username = trigger.dataset.replyUsername;
+
+        replyInput.value = username;
+        input.placeholder = `回复${username}`;
+        input.focus();
       });
     });
   </script>
