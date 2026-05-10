@@ -1,0 +1,39 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">收到的好友申请：（{{ pending_count }}）</h1>
+      <p class="subtle">处理其他用户发来的好友申请。</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a class="btn btn-primary" href="{% url 'diary:friend_add' %}">添加好友</a>
+      <a class="btn" href="{% url 'diary:friends' %}">返回</a>
+    </div>
+  </div>
+
+  <div class="grid" style="gap:14px;">
+    {% for friend_request in friend_requests %}
+      <article class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <a href="{% url 'diary:public_profile' friend_request.from_user.username %}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ friend_request.from_user.username }}</a>
+          <p class="subtle" style="margin:6px 0 0;">{{ friend_request.created_at|date:"Y-m-d H:i" }} 发来好友申请。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <form method="post" action="{% url 'diary:friend_request_accept' friend_request.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit">同意</button>
+          </form>
+          <form method="post" action="{% url 'diary:friend_request_decline' friend_request.pk %}">
+            {% csrf_token %}
+            <button class="btn" type="submit">拒绝</button>
+          </form>
+        </div>
+      </article>
+    {% empty %}
+      <div class="card">
+        <p style="margin:0;">暂无收到的好友申请。</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,6 +1,17 @@
 from django.contrib import admin
 
-from diary.models import BattleRequest, BattleResponse, DailyMedia, DailyRecord, Moment, MomentComment, MomentLike, MomentMedia
+from diary.models import (
+    BattleRequest,
+    BattleResponse,
+    DailyMedia,
+    DailyRecord,
+    FriendRequest,
+    Friendship,
+    Moment,
+    MomentComment,
+    MomentLike,
+    MomentMedia,
+)
 
 
 @admin.register(DailyRecord)
@@ -57,6 +68,21 @@ class MomentCommentAdmin(admin.ModelAdmin):
     list_display = ["id", "moment", "user", "created_at"]
     list_filter = ["created_at"]
     search_fields = ["user__username", "text", "moment__text"]
+
+
+@admin.register(Friendship)
+class FriendshipAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", "friend", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["user__username", "friend__username"]
+
+
+@admin.register(FriendRequest)
+class FriendRequestAdmin(admin.ModelAdmin):
+    list_display = ["id", "from_user", "to_user", "status", "created_at", "updated_at"]
+    list_filter = ["status", "created_at"]
+    search_fields = ["from_user__username", "to_user__username"]
+
 
 @admin.register(BattleRequest)
 class BattleRequestAdmin(admin.ModelAdmin):

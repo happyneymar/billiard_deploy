@@ -5,7 +5,16 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from diary.models import BattleRequest, BattleResponse, DailyRecord, Moment, MomentComment, MomentLike
+from diary.models import (
+    BattleRequest,
+    BattleResponse,
+    DailyRecord,
+    FriendRequest,
+    Friendship,
+    Moment,
+    MomentComment,
+    MomentLike,
+)
 
 
 class MomentCommentTests(TestCase):
@@ -298,6 +307,89 @@ class BattleViewTests(TestCase):
 
         self.assertContains(response, "在球厅有一场")
         self.assertNotContains(response, "在球厅地方")
+
+
+class FriendViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="frienduser", password="pass12345")
+        self.other = User.objects.create_user(username="otherfriend", password="pass12345")
+        self.third = User.objects.create_user(username="thirdfriend", password="pass12345")
+
+    def test_topbar_replaces_user_search_with_friend_button(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:record_list"))
+
+        self.assertContains(response, reverse("diary:friends"))
+        self.assertContains(response, "好友")
+        self.assertNotContains(response, "查看他人记录")
+        self.assertNotContains(response, "查询")
+
+    def test_friends_page_shows_friend_request_count_and_friend_links(self):
+        Friendship.create_pair(self.user, self.other)
+        FriendRequest.objects.create(from_user=self.third, to_user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:friends"))
+
+        self.assertContains(response, "添加好友")
+        self.assertContains(response, "收到的好友申请：（1）")
+        self.assertContains(response, reverse("diary:friend_add"))
+        self.assertContains(response, reverse("diary:friend_requests"))
+        self.assertContains(response, f"{reverse('diary:public_profile', kwargs={'username': self.other.username})}?from=friends")
+        self.assertContains(response, self.other.username)
+
+    def test_profile_from_friends_returns_to_friends_page(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("diary:public_profile", kwargs={"username": self.other.username}),
+            {"from": "friends"},
+        )
+
+        self.assertContains(response, "返回我的好友界面")
+        self.assertContains(response, reverse("diary:friends"))
+        self.assertNotContains(response, "返回我的记录")
+
+    def test_send_friend_request_by_username(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("diary:friend_add"), {"username": self.other.username})
+
+        self.assertRedirects(response, reverse("diary:friends"))
+        self.assertTrue(
+            FriendRequest.objects.filter(
+                from_user=self.user,
+                to_user=self.other,
+                status=FriendRequest.STATUS_PENDING,
+            ).exists()
+        )
+
+    def test_received_friend_requests_can_be_accepted(self):
+        friend_request = FriendRequest.objects.create(from_user=self.other, to_user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:friend_request_accept", kwargs={"pk": friend_request.pk})
+        )
+
+        self.assertRedirects(response, reverse("diary:friend_requests"))
+        friend_request.refresh_from_db()
+        self.assertEqual(friend_request.status, FriendRequest.STATUS_ACCEPTED)
+        self.assertTrue(Friendship.are_friends(self.user, self.other))
+
+    def test_received_friend_requests_can_be_declined(self):
+        friend_request = FriendRequest.objects.create(from_user=self.other, to_user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("diary:friend_request_decline", kwargs={"pk": friend_request.pk})
+        )
+
+        self.assertRedirects(response, reverse("diary:friend_requests"))
+        friend_request.refresh_from_db()
+        self.assertEqual(friend_request.status, FriendRequest.STATUS_DECLINED)
+        self.assertFalse(Friendship.are_friends(self.user, self.other))
 
 
 class GameStartViewTests(TestCase):

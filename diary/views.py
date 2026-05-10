@@ -25,6 +25,8 @@ from diary.models import (
     BattleResponse,
     DailyMedia,
     DailyRecord,
+    FriendRequest,
+    Friendship,
     MediaFileValidator,
     Moment,
     MomentComment,
@@ -329,6 +331,136 @@ def user_search(request):
     return render(request, "diary/user_search.html")
 
 
+def _pending_friend_request_count(user):
+    if not user.is_authenticated:
+        return 0
+    return FriendRequest.objects.filter(
+        to_user=user,
+        status=FriendRequest.STATUS_PENDING,
+    ).count()
+
+
+@login_required
+def friends(request):
+    friendships = (
+        Friendship.objects.filter(Q(user=request.user) | Q(friend=request.user))
+        .select_related("user", "friend")
+        .order_by("user__username", "friend__username")
+    )
+    friend_users = sorted(
+        [friendship.other_user(request.user) for friendship in friendships],
+        key=lambda user: user.username.lower(),
+    )
+    return render(
+        request,
+        "diary/friends.html",
+        {
+            "friends": friend_users,
+            "pending_count": _pending_friend_request_count(request.user),
+        },
+    )
+
+
+@login_required
+def friend_add(request):
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        target = User.objects.filter(username=username).first()
+        if not username:
+            messages.error(request, "请输入用户名。")
+        elif target is None:
+            messages.error(request, f"未找到用户 {username}。")
+        elif target.id == request.user.id:
+            messages.error(request, "不能添加自己为好友。")
+        elif Friendship.are_friends(request.user, target):
+            messages.info(request, f"{target.username} 已经是你的好友。")
+        else:
+            reverse_request = FriendRequest.objects.filter(
+                from_user=target,
+                to_user=request.user,
+                status=FriendRequest.STATUS_PENDING,
+            ).first()
+            if reverse_request:
+                Friendship.create_pair(request.user, target)
+                reverse_request.status = FriendRequest.STATUS_ACCEPTED
+                reverse_request.save(update_fields=["status", "updated_at"])
+                messages.success(request, f"已同意 {target.username} 的好友申请。")
+                return redirect("diary:friends")
+
+            friend_request, created = FriendRequest.objects.get_or_create(
+                from_user=request.user,
+                to_user=target,
+                defaults={"status": FriendRequest.STATUS_PENDING},
+            )
+            if not created and friend_request.status == FriendRequest.STATUS_PENDING:
+                messages.info(request, f"你已经向 {target.username} 发送过好友申请。")
+            else:
+                friend_request.status = FriendRequest.STATUS_PENDING
+                friend_request.save(update_fields=["status", "updated_at"])
+                messages.success(request, f"已向 {target.username} 发送好友申请。")
+                return redirect("diary:friends")
+            if created:
+                messages.success(request, f"已向 {target.username} 发送好友申请。")
+                return redirect("diary:friends")
+
+    return render(
+        request,
+        "diary/friend_add.html",
+        {"pending_count": _pending_friend_request_count(request.user)},
+    )
+
+
+@login_required
+def friend_requests(request):
+    requests = (
+        FriendRequest.objects.filter(
+            to_user=request.user,
+            status=FriendRequest.STATUS_PENDING,
+        )
+        .select_related("from_user")
+        .order_by("-created_at")
+    )
+    return render(
+        request,
+        "diary/friend_requests.html",
+        {
+            "friend_requests": requests,
+            "pending_count": requests.count(),
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def friend_request_accept(request, pk: int):
+    friend_request = get_object_or_404(
+        FriendRequest,
+        pk=pk,
+        to_user=request.user,
+        status=FriendRequest.STATUS_PENDING,
+    )
+    Friendship.create_pair(request.user, friend_request.from_user)
+    friend_request.status = FriendRequest.STATUS_ACCEPTED
+    friend_request.save(update_fields=["status", "updated_at"])
+    messages.success(request, f"已添加 {friend_request.from_user.username} 为好友。")
+    return redirect("diary:friend_requests")
+
+
+@login_required
+@require_http_methods(["POST"])
+def friend_request_decline(request, pk: int):
+    friend_request = get_object_or_404(
+        FriendRequest,
+        pk=pk,
+        to_user=request.user,
+        status=FriendRequest.STATUS_PENDING,
+    )
+    friend_request.status = FriendRequest.STATUS_DECLINED
+    friend_request.save(update_fields=["status", "updated_at"])
+    messages.info(request, f"已拒绝 {friend_request.from_user.username} 的好友申请。")
+    return redirect("diary:friend_requests")
+
+
 def public_profile(request, username: str):
     target = get_object_or_404(User, username=username)
     base_qs = DailyRecord.objects.filter(user=target)
@@ -339,12 +471,16 @@ def public_profile(request, username: str):
     back_label = "返回我的记录"
     back_url = reverse("diary:record_list")
     from_moments = request.GET.get("from") == "moments"
+    from_friends = request.GET.get("from") == "friends"
     moment_id = request.GET.get("moment", "")
     if from_moments:
         back_label = "返回朋友圈"
         back_url = reverse("diary:moments")
         if moment_id.isdigit():
             back_url = f"{back_url}#moment-{moment_id}"
+    elif from_friends:
+        back_label = "返回我的好友界面"
+        back_url = reverse("diary:friends")
     user_moments_url = reverse("diary:user_moments", kwargs={"username": target.username})
     if from_moments:
         user_moments_url = f"{user_moments_url}?from=moments"

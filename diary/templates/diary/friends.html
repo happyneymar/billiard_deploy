@@ -1,0 +1,29 @@
+{% extends "diary/base.html" %}
+
+{% block content %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">好友</h1>
+      <p class="subtle">查看好友，点击用户名可以进入对方主页。</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a class="btn btn-primary" href="{% url 'diary:friend_add' %}">添加好友</a>
+      <a class="btn" href="{% url 'diary:friend_requests' %}">收到的好友申请：（{{ pending_count }}）</a>
+      <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
+    </div>
+  </div>
+
+  <div class="card">
+    {% if friends %}
+      <div style="display:grid;gap:10px;">
+        {% for friend in friends %}
+          <a class="btn" href="{% url 'diary:public_profile' friend.username %}?from=friends" style="justify-content:flex-start;">
+            {{ friend.username }}
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="margin:0;">暂无好友。</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -246,6 +246,82 @@ class MomentComment(models.Model):
     def __str__(self) -> str:
         return f"{self.user_id} - {self.text[:24]}"
 
+
+class Friendship(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friendships",
+    )
+    friend = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="friend_of",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "friend"], name="unique_friendship_pair")
+        ]
+        ordering = ["friend__username"]
+
+    @classmethod
+    def create_pair(cls, user, friend):
+        if user.id == friend.id:
+            return
+        first, second = sorted([user, friend], key=lambda item: item.id)
+        cls.objects.get_or_create(user=first, friend=second)
+
+    @classmethod
+    def are_friends(cls, user, friend) -> bool:
+        if not user.is_authenticated or user.id == friend.id:
+            return False
+        first, second = sorted([user, friend], key=lambda item: item.id)
+        return cls.objects.filter(user=first, friend=second).exists()
+
+    def other_user(self, user):
+        return self.friend if self.user_id == user.id else self.user
+
+    def __str__(self) -> str:
+        return f"{self.user_id} - {self.friend_id}"
+
+
+class FriendRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_DECLINED = "declined"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "待处理"),
+        (STATUS_ACCEPTED, "已同意"),
+        (STATUS_DECLINED, "已拒绝"),
+    ]
+
+    from_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_friend_requests",
+    )
+    to_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_friend_requests",
+    )
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["from_user", "to_user"], name="unique_friend_request_pair")
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.from_user_id} -> {self.to_user_id} ({self.status})"
+
+
 class BattleRequest(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
