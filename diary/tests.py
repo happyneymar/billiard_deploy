@@ -74,3 +74,22 @@ class MomentCommentTests(TestCase):
             f"{reverse('diary:moments')}?posted=1#moments-top",
             fetch_redirect_response=False,
         )
+
+    def test_main_moments_feed_uses_fixed_publish_topbar(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(reverse("diary:moments"))
+
+        self.assertContains(response, "moments-fixed-topbar")
+        self.assertContains(response, "data-toggle-composer")
+        self.assertContains(response, "id=\"moments-composer\"")
+        self.assertContains(response, "display:none")
+
+    def test_main_moments_feed_sets_scroll_offset_for_fixed_topbar(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(reverse("diary:moments"))
+
+        self.assertContains(response, "scroll-padding-top: 78px")
+        self.assertContains(response, "scroll-margin-top: 78px")
+        self.assertContains(response, "scrollToWithMomentsOffset")

@@ -192,31 +192,33 @@
   </head>
   <body>
     <div class="container">
-      <header class="topbar">
-        <a class="brand" href="{% url 'diary:record_list' %}">
-          <span class="brand-badge" aria-hidden="true"></span>
-          <span>台球战绩记录</span>
-        </a>
+      {% block topbar %}
+        <header class="topbar">
+          <a class="brand" href="{% url 'diary:record_list' %}">
+            <span class="brand-badge" aria-hidden="true"></span>
+            <span>台球战绩记录</span>
+          </a>
 
-        <nav class="nav">
-          <a class="btn btn-primary" href="{% url 'diary:game_start' %}" style="background:linear-gradient(135deg, rgba(34,197,94,0.95), rgba(16,185,129,0.95)); border-color:rgba(34,197,94,0.45);">开灯</a>
-          <a class="btn" href="{% url 'diary:moments' %}">朋友圈</a>
-          <a class="btn" href="{% url 'diary:battles' %}">约战</a>
-          <form action="{% url 'diary:user_search' %}" method="get" style="display:flex;gap:6px;align-items:center;">
-            <input type="text" name="username" placeholder="查看他人记录" value="{{ request.GET.username|default:'' }}"
-              style="width:130px;padding:7px 10px;border-radius:999px;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);" />
-            <button type="submit" class="pill" style="background:rgba(124,58,237,0.22);border:1px solid rgba(124,58,237,0.4);color:rgba(167,139,250,0.95);cursor:pointer;padding:7px 12px;font-size:13px;font-weight:700;border-radius:999px;white-space:nowrap;">查询</button>
-          </form>
-          {% if user.is_authenticated %}
-            <a class="btn btn-primary" href="{% url 'diary:record_new' %}">新增当天记录</a>
-            <span class="pill">当前用户：<strong>{{ user.username }}</strong></span>
-            <a class="btn" href="{% url 'diary:logout' %}">退出</a>
-          {% else %}
-            <a class="btn btn-primary" href="{% url 'diary:login' %}">登录</a>
-            <a class="btn" href="{% url 'diary:register' %}">注册</a>
-          {% endif %}
-        </nav>
-      </header>
+          <nav class="nav">
+            <a class="btn btn-primary" href="{% url 'diary:game_start' %}" style="background:linear-gradient(135deg, rgba(34,197,94,0.95), rgba(16,185,129,0.95)); border-color:rgba(34,197,94,0.45);">开灯</a>
+            <a class="btn" href="{% url 'diary:moments' %}">朋友圈</a>
+            <a class="btn" href="{% url 'diary:battles' %}">约战</a>
+            <form action="{% url 'diary:user_search' %}" method="get" style="display:flex;gap:6px;align-items:center;">
+              <input type="text" name="username" placeholder="查看他人记录" value="{{ request.GET.username|default:'' }}"
+                style="width:130px;padding:7px 10px;border-radius:999px;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);" />
+              <button type="submit" class="pill" style="background:rgba(124,58,237,0.22);border:1px solid rgba(124,58,237,0.4);color:rgba(167,139,250,0.95);cursor:pointer;padding:7px 12px;font-size:13px;font-weight:700;border-radius:999px;white-space:nowrap;">查询</button>
+            </form>
+            {% if user.is_authenticated %}
+              <a class="btn btn-primary" href="{% url 'diary:record_new' %}">新增当天记录</a>
+              <span class="pill">当前用户：<strong>{{ user.username }}</strong></span>
+              <a class="btn" href="{% url 'diary:logout' %}">退出</a>
+            {% else %}
+              <a class="btn btn-primary" href="{% url 'diary:login' %}">登录</a>
+              <a class="btn" href="{% url 'diary:register' %}">注册</a>
+            {% endif %}
+          </nav>
+        </header>
+      {% endblock %}
 
       {% if messages %}
         <div class="card" style="margin-top: 14px;">

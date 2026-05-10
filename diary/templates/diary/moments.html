@@ -1,15 +1,102 @@
 {% extends "diary/base.html" %}
 
+{% block topbar %}
+  {% if show_composer %}
+    <style>
+      .moments-fixed-topbar {
+        position: fixed;
+        top: 0;
+        left: 50%;
+        z-index: 1000;
+        width: min(980px, calc(100% - 32px));
+        transform: translateX(-50%);
+        display: grid;
+        grid-template-columns: 88px 1fr 88px;
+        align-items: center;
+        min-height: 56px;
+        padding: 8px 0;
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(14px);
+      }
+
+      .moments-fixed-spacer {
+        height: 58px;
+      }
+
+      .moments-top-title {
+        justify-self: center;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .moments-top-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 8px 10px;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .moments-top-action:hover {
+        text-decoration: none;
+        color: var(--brand-2);
+      }
+
+      .moments-publish-button {
+        justify-self: end;
+      }
+
+      .moments-exit-link {
+        justify-self: start;
+      }
+
+      .moments-composer {
+        margin-bottom: 18px;
+      }
+
+      html {
+        scroll-padding-top: 78px;
+      }
+
+      #moments-top,
+      .moments-composer,
+      .moments-feed > article {
+        scroll-margin-top: 78px;
+      }
+    </style>
+
+    <header class="moments-fixed-topbar" aria-label="朋友圈顶部导航">
+      <a class="moments-top-action moments-exit-link" href="{% url 'diary:record_list' %}">退出</a>
+      <div class="moments-top-title">朋友圈</div>
+      <button class="moments-top-action moments-publish-button" type="button" data-toggle-composer>发布</button>
+    </header>
+    <div class="moments-fixed-spacer" aria-hidden="true"></div>
+  {% else %}
+    {{ block.super }}
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <div id="moments-top"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
-    <a class="btn" href="{{ back_url }}">{{ back_label }}</a>
-  </div>
-  <p class="subtle">{{ subtitle }}</p>
+  {% if not show_composer %}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
+      <a class="btn" href="{{ back_url }}">{{ back_label }}</a>
+    </div>
+    <p class="subtle">{{ subtitle }}</p>
+  {% endif %}
 
   {% if show_composer %}
-    <div class="card" style="margin-bottom:18px;">
+    <div id="moments-composer" class="card moments-composer" style="display:{% if form.errors %}block{% else %}none{% endif %};">
       <form method="post" enctype="multipart/form-data" class="grid" style="gap:12px;">
         {% csrf_token %}
         {% if form.non_field_errors %}
@@ -99,6 +186,37 @@
   </div>
 
   <script>
+    const momentsTopbar = document.querySelector(".moments-fixed-topbar");
+    const getMomentsScrollOffset = () => {
+      if (!momentsTopbar) return 0;
+      return momentsTopbar.getBoundingClientRect().height + 16;
+    };
+    const scrollToWithMomentsOffset = (element) => {
+      if (!element) return;
+      const targetTop = element.getBoundingClientRect().top + window.scrollY - getMomentsScrollOffset();
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+    };
+
+    const composer = document.getElementById("moments-composer");
+    const composerToggle = document.querySelector("[data-toggle-composer]");
+    if (composer && composerToggle) {
+      composerToggle.addEventListener("click", () => {
+        const isHidden = composer.style.display === "none";
+        composer.style.display = isHidden ? "block" : "none";
+        if (isHidden) {
+          scrollToWithMomentsOffset(composer);
+          const textarea = composer.querySelector("textarea, input[type='text']");
+          if (textarea) textarea.focus();
+        }
+      });
+    }
+
+    if (window.location.hash && !window.location.search.includes("posted=1")) {
+      const hashTarget = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+      requestAnimationFrame(() => scrollToWithMomentsOffset(hashTarget));
+      setTimeout(() => scrollToWithMomentsOffset(hashTarget), 80);
+    }
+
     {% if request.GET.posted %}
       if ("scrollRestoration" in history) {
         history.scrollRestoration = "manual";
