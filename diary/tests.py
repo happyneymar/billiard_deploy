@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from diary.models import BattleRequest, BattleResponse, Moment, MomentComment
+from diary.models import BattleRequest, BattleResponse, DailyRecord, Moment, MomentComment
 
 
 class MomentCommentTests(TestCase):
@@ -258,3 +258,32 @@ class GameStartViewTests(TestCase):
 
         self.assertContains(response, "返回")
         self.assertContains(response, reverse("diary:record_list"))
+
+
+class RecordDetailViewTests(TestCase):
+    def test_8ball_score_is_shown_inside_detail_card(self):
+        user = User.objects.create_user(username="recorduser", password="pass12345")
+        record = DailyRecord.objects.create(
+            user=user,
+            date=timezone.localdate(),
+            game_type=DailyRecord.TYPE_8BALL,
+            opponent_name="对手",
+            score_for=3,
+            score_against=2,
+            clear_in_count=1,
+            clear_boom_count=0,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("diary:record_detail", kwargs={"pk": record.pk}))
+        content = response.content.decode()
+        subtitle = content.split("</p>", 1)[0]
+
+        self.assertContains(response, "接清局数")
+        self.assertContains(response, "炸清局数")
+        self.assertContains(response, "比分")
+        self.assertContains(response, "3:2")
+        self.assertContains(response, "返回")
+        self.assertContains(response, reverse("diary:record_list"))
+        self.assertNotContains(response, "返回历史记录")
+        self.assertNotIn("比分 3:2", subtitle)
