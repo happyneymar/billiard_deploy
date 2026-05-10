@@ -345,6 +345,11 @@ def public_profile(request, username: str):
         back_url = reverse("diary:moments")
         if moment_id.isdigit():
             back_url = f"{back_url}#moment-{moment_id}"
+    user_moments_url = reverse("diary:user_moments", kwargs={"username": target.username})
+    if from_moments:
+        user_moments_url = f"{user_moments_url}?from=moments"
+        if moment_id.isdigit():
+            user_moments_url = f"{user_moments_url}&moment={moment_id}"
 
     stats = _build_stats(base_qs)
     records = _filter_by_period(base_qs, period).order_by("-date", "-created_at")
@@ -361,6 +366,7 @@ def public_profile(request, username: str):
             "profile_back_url": back_url,
             "profile_from_moments": from_moments,
             "profile_moment_id": moment_id if moment_id.isdigit() else "",
+            "profile_user_moments_url": user_moments_url,
         },
     )
 
@@ -454,16 +460,33 @@ def _build_moments_context(
 @login_required
 def user_moments(request, username: str):
     target = get_object_or_404(User, username=username)
+    if target.id == request.user.id:
+        back_url = reverse("diary:moments")
+        back_label = "返回朋友圈"
+        page_title = "我的朋友圈"
+        subtitle = "以下是你发布过的朋友圈。"
+    else:
+        back_url = reverse("diary:public_profile", kwargs={"username": target.username})
+        from_moments = request.GET.get("from") == "moments"
+        moment_id = request.GET.get("moment", "")
+        if from_moments:
+            back_url = f"{back_url}?from=moments"
+            if moment_id.isdigit():
+                back_url = f"{back_url}&moment={moment_id}"
+        back_label = "返回TA的主页"
+        page_title = f"{target.username} 的朋友圈"
+        subtitle = f"以下是 {target.username} 发布过的朋友圈。"
+
     return render(
         request,
         "diary/moments.html",
         _build_moments_context(
             request,
             Moment.objects.filter(user=target),
-            page_title=f"{target.username} 的朋友圈",
-            subtitle=f"以下是 {target.username} 发布过的朋友圈。",
-            back_url=reverse("diary:public_profile", kwargs={"username": target.username}),
-            back_label="返回TA的主页",
+            page_title=page_title,
+            subtitle=subtitle,
+            back_url=back_url,
+            back_label=back_label,
         ),
     )
 
@@ -486,6 +509,21 @@ def moment_like(request, pk: int):
                 "like_count": moment.likes.count(),
             }
         )
+    return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
+
+
+@login_required
+@require_http_methods(["POST"])
+def moment_delete(request, pk: int):
+    moment = get_object_or_404(
+        Moment.objects.prefetch_related("media_items"),
+        pk=pk,
+        user=request.user,
+    )
+    for media in moment.media_items.all():
+        media.file.delete(save=False)
+    moment.delete()
+    messages.success(request, "朋友圈已删除。")
     return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
 
 

@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from diary.models import BattleRequest, BattleResponse, DailyRecord, Moment, MomentComment
+from diary.models import BattleRequest, BattleResponse, DailyRecord, Moment, MomentComment, MomentLike
 
 
 class MomentCommentTests(TestCase):
@@ -103,6 +103,10 @@ class MomentCommentTests(TestCase):
 
         self.assertContains(response, "返回朋友圈")
         self.assertContains(response, f"{reverse('diary:moments')}#moment-{self.moment.pk}")
+        self.assertContains(
+            response,
+            f"{reverse('diary:user_moments', kwargs={'username': self.reply_target.username})}?from=moments&amp;moment={self.moment.pk}",
+        )
         self.assertNotContains(response, "返回我的记录")
 
     def test_profile_from_search_keeps_record_back_button(self):
@@ -114,7 +118,23 @@ class MomentCommentTests(TestCase):
 
         self.assertContains(response, "返回我的记录")
         self.assertContains(response, reverse("diary:record_list"))
+        self.assertContains(response, reverse("diary:user_moments", kwargs={"username": self.reply_target.username}))
+        self.assertNotContains(response, f"{reverse('diary:user_moments', kwargs={'username': self.reply_target.username})}?from=moments")
         self.assertNotContains(response, "返回朋友圈")
+
+    def test_user_moments_preserves_moments_source_when_returning_to_profile(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(
+            reverse("diary:user_moments", kwargs={"username": self.reply_target.username}),
+            {"from": "moments", "moment": str(self.moment.pk)},
+        )
+
+        self.assertContains(response, "返回TA的主页")
+        self.assertContains(
+            response,
+            f"{reverse('diary:public_profile', kwargs={'username': self.reply_target.username})}?from=moments&amp;moment={self.moment.pk}",
+        )
 
     def test_posting_moment_redirects_to_top_marker(self):
         self.client.force_login(self.author)
@@ -133,6 +153,8 @@ class MomentCommentTests(TestCase):
         response = self.client.get(reverse("diary:moments"))
 
         self.assertContains(response, "moments-fixed-topbar")
+        self.assertContains(response, "我的朋友圈")
+        self.assertContains(response, reverse("diary:user_moments", kwargs={"username": self.author.username}))
         self.assertContains(response, "data-toggle-composer")
         self.assertContains(response, "id=\"moments-composer\"")
         self.assertContains(response, "display:none")
@@ -145,6 +167,35 @@ class MomentCommentTests(TestCase):
         self.assertContains(response, "scroll-padding-top: 78px")
         self.assertContains(response, "scroll-margin-top: 78px")
         self.assertContains(response, "scrollToWithMomentsOffset")
+
+    def test_my_moments_page_shows_delete_button_for_own_moments(self):
+        self.client.force_login(self.author)
+
+        response = self.client.get(reverse("diary:user_moments", kwargs={"username": self.author.username}))
+
+        self.assertContains(response, "我的朋友圈")
+        self.assertContains(response, "删除")
+        self.assertContains(response, reverse("diary:moment_delete", kwargs={"pk": self.moment.pk}))
+
+    def test_moment_author_can_delete_own_moment_with_comments_and_likes(self):
+        MomentComment.objects.create(moment=self.moment, user=self.reply_target, text="评论")
+        MomentLike.objects.create(moment=self.moment, user=self.reply_target)
+        self.client.force_login(self.author)
+
+        response = self.client.post(reverse("diary:moment_delete", kwargs={"pk": self.moment.pk}))
+
+        self.assertRedirects(response, reverse("diary:moments"))
+        self.assertFalse(Moment.objects.filter(pk=self.moment.pk).exists())
+        self.assertFalse(MomentComment.objects.filter(moment_id=self.moment.pk).exists())
+        self.assertFalse(MomentLike.objects.filter(moment_id=self.moment.pk).exists())
+
+    def test_user_cannot_delete_someone_elses_moment(self):
+        self.client.force_login(self.reply_target)
+
+        response = self.client.post(reverse("diary:moment_delete", kwargs={"pk": self.moment.pk}))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Moment.objects.filter(pk=self.moment.pk).exists())
 
 
 class BattleViewTests(TestCase):
