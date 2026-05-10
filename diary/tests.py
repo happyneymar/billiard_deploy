@@ -353,8 +353,31 @@ class FriendViewTests(TestCase):
         self.assertContains(response, reverse("diary:messages"))
         self.assertContains(response, "好友")
         self.assertContains(response, "消息")
+        self.assertNotContains(response, "消息（")
         self.assertNotContains(response, "查看他人记录")
         self.assertNotContains(response, "查询")
+
+    def test_topbar_message_button_shows_pending_message_count(self):
+        for offset in (1, 2):
+            DirectBattleRequest.objects.create(
+                from_user=self.other,
+                to_user=self.user,
+                battle_time=timezone.now() + timedelta(days=offset),
+                location=f"球厅{offset}",
+            )
+        DirectBattleRequest.objects.create(
+            from_user=self.third,
+            to_user=self.user,
+            battle_time=timezone.now() + timedelta(days=3),
+            location="已处理球厅",
+            status=DirectBattleRequest.STATUS_ACCEPTED,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:record_list"))
+
+        self.assertContains(response, "消息（2）")
+        self.assertNotContains(response, "消息（3）")
 
     def test_friends_page_shows_friend_request_count_and_friend_links(self):
         Friendship.create_pair(self.user, self.other)
