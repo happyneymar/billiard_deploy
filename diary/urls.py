@@ -14,6 +14,7 @@ urlpatterns = [
     path("records/<int:pk>/", views.record_detail, name="record_detail"),
     path("records/<int:pk>/delete/", views.record_delete, name="record_delete"),
     path("battles/", views.battles, name="battles"),
+    path("battles/history/", views.battle_history, name="battle_history"),
     path("battles/<int:pk>/join/", views.battle_join, name="battle_join"),
     path("moments/", views.moments_feed, name="moments"),
     path("moments/<int:pk>/like/", views.moment_like, name="moment_like"),

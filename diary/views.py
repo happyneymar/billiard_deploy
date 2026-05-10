@@ -522,8 +522,10 @@ def moment_comment(request, pk: int):
 
 def _build_battle_notices(user):
     today = timezone.localdate()
+    now = timezone.now()
     battles = (
         BattleRequest.objects.filter(battle_time__date=today)
+        .filter(battle_time__gte=now)
         .filter(Q(user=user) | Q(responses__user=user))
         .select_related("user")
         .prefetch_related("responses__user")
@@ -540,13 +542,14 @@ def _build_battle_notices(user):
         if not names:
             continue
         notices.append(
-            f"您今日{timezone.localtime(battle.battle_time).strftime('%H:%M')}在{battle.location}地方有一场和{', '.join(names)}的约战"
+            f"您今日{timezone.localtime(battle.battle_time).strftime('%H:%M')}在{battle.location}有一场和{', '.join(names)}的约战"
         )
     return notices
 
 
 @login_required
 def battles(request):
+    now = timezone.now()
     if request.method == "POST":
         form = BattleForm(request.POST)
         if form.is_valid():
@@ -559,7 +562,8 @@ def battles(request):
         form = BattleForm()
 
     battle_list = (
-        BattleRequest.objects.select_related("user")
+        BattleRequest.objects.filter(battle_time__gte=now)
+        .select_related("user")
         .prefetch_related("responses__user")
         .annotate(response_count=Count("responses", distinct=True))
         .order_by("battle_time", "-created_at")
@@ -583,11 +587,40 @@ def battles(request):
 
 
 @login_required
+def battle_history(request):
+    now = timezone.now()
+    battle_list = (
+        BattleRequest.objects.filter(battle_time__lt=now)
+        .filter(Q(user=request.user) | Q(responses__user=request.user))
+        .select_related("user")
+        .prefetch_related("responses__user")
+        .annotate(response_count=Count("responses", distinct=True))
+        .distinct()
+        .order_by("-battle_time", "-created_at")
+    )
+    for battle in battle_list:
+        battle.is_created_by_me = battle.user_id == request.user.id
+        battle.is_joined_by_me = any(
+            response.user_id == request.user.id for response in battle.responses.all()
+        )
+
+    return render(
+        request,
+        "diary/battle_history.html",
+        {
+            "battles": battle_list,
+        },
+    )
+
+
+@login_required
 @require_http_methods(["POST"])
 def battle_join(request, pk: int):
     battle = get_object_or_404(BattleRequest, pk=pk)
     if battle.user_id == request.user.id:
         messages.error(request, "不能应战自己发布的约战。")
+    elif battle.battle_time < timezone.now():
+        messages.error(request, "这条约战已经结束，不能再加入。")
     elif battle.responses.filter(user=request.user).exists():
         messages.info(request, "你已经应战过这条约战。")
     elif battle.responses.count() >= battle.player_count:

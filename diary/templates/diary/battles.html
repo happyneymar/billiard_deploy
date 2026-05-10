@@ -1,8 +1,13 @@
 {% extends "diary/base.html" %}
 
 {% block content %}
-  <h1 class="page-title">约战</h1>
-  <p class="subtle">发布约战请求，或加入其他人的台球约战。</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1 class="page-title" style="margin-bottom:6px;">约战</h1>
+      <p class="subtle">发布约战请求，或加入其他人的台球约战。</p>
+    </div>
+    <a class="btn" href="{% url 'diary:battle_history' %}">约战记录</a>
+  </div>
 
   {% if battle_notices %}
     <div class="card" style="margin-bottom:18px;display:grid;gap:8px;">
