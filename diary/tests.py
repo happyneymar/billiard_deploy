@@ -1,9 +1,10 @@
 from datetime import timedelta
 from unittest import mock
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.http import HttpResponse
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -20,6 +21,39 @@ from diary.models import (
     MomentMedia,
     PrivateMessage,
 )
+from diary.middleware import RateLimitMiddleware, RateLimitStore
+
+
+class RateLimitMiddlewareTests(TestCase):
+    def setUp(self):
+        self.store = RateLimitStore()
+        self.store._data.clear()
+        self.factory = RequestFactory()
+        self.middleware = RateLimitMiddleware(lambda request: HttpResponse("ok"))
+
+    def tearDown(self):
+        self.store._data.clear()
+
+    def _request(self, path, user=None):
+        request = self.factory.get(path, REMOTE_ADDR="127.0.0.1")
+        request.user = user or AnonymousUser()
+        return request
+
+    def test_rate_limit_buckets_are_separate_by_request_type(self):
+        for _ in range(30):
+            response = self.middleware(self._request("/login/"))
+            self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.middleware(self._request("/login/")).status_code, 429)
+        self.assertEqual(self.middleware(self._request("/")).status_code, 200)
+
+    def test_authenticated_default_limit_is_higher_than_anonymous_limit(self):
+        user = User.objects.create_user(username="active", password="pass12345")
+
+        for _ in range(121):
+            response = self.middleware(self._request("/", user=user))
+
+        self.assertEqual(response.status_code, 200)
 
 
 class MomentCommentTests(TestCase):

@@ -150,6 +150,12 @@
       }
       textarea { min-height: 110px; resize: vertical; }
       input:focus, select:focus, textarea:focus { border-color: rgba(124, 58, 237, 0.55); box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.16); }
+      button:disabled,
+      .btn[aria-disabled="true"] {
+        cursor: not-allowed;
+        opacity: 0.62;
+        transform: none;
+      }
 
       .field { display: grid; gap: 6px; }
       .field .help { color: var(--muted); font-size: 13px; }
@@ -227,6 +233,26 @@
 
       <main style="margin-top: 14px;">{% block content %}{% endblock %}</main>
     </div>
+    <script>
+      document.addEventListener("submit", (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.matches(".js-like-form, .js-comment-form, [data-no-submit-lock]")) return;
+        if (form.dataset.submitting === "true") {
+          event.preventDefault();
+          return;
+        }
+
+        form.dataset.submitting = "true";
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+          button.disabled = true;
+          if (button.tagName === "BUTTON" && button.textContent.trim()) {
+            button.dataset.originalText = button.textContent;
+            button.textContent = "处理中...";
+          }
+        });
+      }, true);
+    </script>
   </body>
 </html>
 

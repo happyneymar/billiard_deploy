@@ -62,17 +62,23 @@ class RateLimitMiddleware:
     基于 IP 和用户的限流中间件
 
     限流规则：
-    - 匿名用户: 60请求/分钟
-    - 登录用户: 200请求/分钟
-    - API 端点: 30请求/分钟
+    - 匿名用户: 较宽松的浏览额度，认证接口单独限制
+    - 登录用户: 更高的正常操作额度
+    - 不同类型请求分别计数，避免页面浏览误伤按钮/API 操作
     """
 
-    # 不同端点的限流配置 (max_requests, window_seconds)
-    RATE_LIMITS = {
-        "api": (30, 60),       # API: 30请求/分钟
-        "auth": (10, 60),       # 认证: 10请求/分钟
-        "default": (60, 60),    # 默认: 60请求/分钟
-        "upload": (20, 60),     # 上传: 20请求/分钟
+    # 不同端点的限流配置 (max_requests, window_seconds)。
+    ANONYMOUS_RATE_LIMITS = {
+        "api": (60, 60),
+        "auth": (30, 60),
+        "default": (120, 60),
+        "upload": (30, 60),
+    }
+    AUTHENTICATED_RATE_LIMITS = {
+        "api": (240, 60),
+        "auth": (30, 60),
+        "default": (240, 60),
+        "upload": (60, 60),
     }
 
     # 豁免的路径（不需要限流）
@@ -94,10 +100,10 @@ class RateLimitMiddleware:
 
         # 确定限流类别
         rate_type = self._get_rate_type(request.path)
-        max_requests, window_seconds = self.RATE_LIMITS.get(rate_type, self.RATE_LIMITS["default"])
+        max_requests, window_seconds = self._get_rate_limit(request, rate_type)
 
         # 生成限流键
-        rate_key = self._get_rate_key(request)
+        rate_key = self._get_rate_key(request, rate_type)
 
         # 检查限流
         if not self.store.is_allowed(rate_key, max_requests, window_seconds):
@@ -134,12 +140,20 @@ class RateLimitMiddleware:
             return "upload"
         return "default"
 
-    def _get_rate_key(self, request) -> str:
+    def _get_rate_limit(self, request, rate_type: str) -> tuple[int, int]:
+        limits = (
+            self.AUTHENTICATED_RATE_LIMITS
+            if hasattr(request, "user") and request.user.is_authenticated
+            else self.ANONYMOUS_RATE_LIMITS
+        )
+        return limits.get(rate_type, limits["default"])
+
+    def _get_rate_key(self, request, rate_type: str) -> str:
         """生成限流键"""
         # 优先使用用户ID，fallback 到 IP
         if hasattr(request, "user") and request.user.is_authenticated:
-            return f"user:{request.user.id}"
-        return f"ip:{self._get_client_ip(request)}"
+            return f"{rate_type}:user:{request.user.id}"
+        return f"{rate_type}:ip:{self._get_client_ip(request)}"
 
     def _get_client_ip(self, request) -> str:
         """获取客户端真实IP"""
