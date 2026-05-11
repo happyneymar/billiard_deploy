@@ -247,8 +247,8 @@ class MomentCommentTests(TestCase):
 
         response = self.client.get(reverse("diary:moments"))
 
-        self.assertContains(response, "scroll-padding-top: 78px")
-        self.assertContains(response, "scroll-margin-top: 78px")
+        self.assertContains(response, "scroll-padding-top: 96px")
+        self.assertContains(response, "scroll-margin-top: 96px")
         self.assertContains(response, "scrollToWithMomentsOffset")
 
     def test_my_moments_page_shows_delete_button_for_own_moments(self):

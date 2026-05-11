@@ -1,36 +1,61 @@
 {% extends "diary/base.html" %}
 
+{% block body_class %}moments-page{% endblock %}
+
 {% block topbar %}
   {% if show_composer %}
     <style>
+      body.moments-page {
+        --moments-green: #00b887;
+        --moments-green-dark: #009b75;
+        --moments-ink: #14213d;
+        --moments-muted: #61708a;
+        --moments-line: #dfe8ee;
+        --moments-soft: #f4fbf9;
+        --moments-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+        color: var(--moments-ink);
+        background:
+          radial-gradient(760px 420px at 18% 92%, rgba(124, 58, 237, 0.16), transparent 62%),
+          radial-gradient(760px 420px at 82% 92%, rgba(0, 184, 135, 0.14), transparent 64%),
+          linear-gradient(180deg, #f9fbff 0%, #eefdfa 58%, #f7fbff 100%);
+      }
+
+      body.moments-page .container {
+        width: min(900px, calc(100% - 32px));
+        padding-top: 0;
+      }
+
       .moments-fixed-topbar {
         position: fixed;
         top: 0;
         left: 50%;
         z-index: 1000;
-        width: min(980px, calc(100% - 32px));
+        width: min(900px, calc(100% - 32px));
         transform: translateX(-50%);
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 56px;
-        padding: 8px 0;
-        background: color-mix(in srgb, var(--bg) 86%, transparent);
-        border-bottom: 1px solid var(--border);
-        backdrop-filter: blur(14px);
+        min-height: 62px;
+        padding: 9px 16px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(15, 63, 88, 0.09);
+        border-top: 0;
+        border-radius: 0 0 18px 18px;
+        box-shadow: 0 14px 34px rgba(15, 63, 88, 0.1);
+        backdrop-filter: blur(16px);
       }
 
       .moments-fixed-spacer {
-        height: 58px;
+        height: 78px;
       }
 
       .moments-top-title {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--text);
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--moments-ink);
         pointer-events: none;
       }
 
@@ -38,24 +63,29 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 38px;
-        padding: 8px 10px;
+        min-height: 40px;
+        padding: 8px 12px;
         border: 0;
+        border-radius: 10px;
         background: transparent;
-        color: var(--text);
+        color: #334155;
         font: inherit;
-        font-weight: 750;
+        font-weight: 800;
         cursor: pointer;
         text-decoration: none;
       }
 
       .moments-top-action:hover {
         text-decoration: none;
-        color: var(--brand-2);
+        color: var(--moments-green-dark);
+        background: rgba(0, 184, 135, 0.09);
       }
 
       .moments-publish-button {
         justify-self: auto;
+        color: #ffffff;
+        background: linear-gradient(135deg, var(--moments-green), #05a884);
+        box-shadow: 0 12px 26px rgba(0, 184, 135, 0.22);
       }
 
       .moments-top-actions {
@@ -72,17 +102,33 @@
       }
 
       .moments-composer {
-        margin-bottom: 18px;
+        margin-bottom: 20px;
       }
 
       html {
-        scroll-padding-top: 78px;
+        scroll-padding-top: 96px;
       }
 
       #moments-top,
       .moments-composer,
       .moments-feed > article {
-        scroll-margin-top: 78px;
+        scroll-margin-top: 96px;
+      }
+
+      @media (max-width: 640px) {
+        .moments-fixed-topbar {
+          width: calc(100% - 20px);
+          padding: 8px 10px;
+        }
+
+        .moments-top-title {
+          font-size: 18px;
+        }
+
+        .moments-top-action {
+          padding: 7px 8px;
+          font-size: 14px;
+        }
       }
     </style>
 
@@ -102,6 +148,218 @@
 
 {% block content %}
   <style>
+    body.moments-page .page-title {
+      color: #14213d;
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    body.moments-page .subtle {
+      color: #61708a;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    body.moments-page .btn {
+      min-height: 38px;
+      border-radius: 999px;
+      border-color: #dfe8ee;
+      background: #ffffff;
+      color: #334155;
+      box-shadow: none;
+    }
+
+    body.moments-page .btn:hover {
+      color: #009b75;
+      border-color: rgba(0, 184, 135, 0.28);
+      background: #f4fffb;
+      text-decoration: none;
+    }
+
+    body.moments-page .btn-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, #00b887, #05a884);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(0, 184, 135, 0.2);
+    }
+
+    body.moments-page input,
+    body.moments-page textarea {
+      border-color: #dfe8ee;
+      background: #ffffff;
+      color: #14213d;
+    }
+
+    body.moments-page input:focus,
+    body.moments-page textarea:focus {
+      border-color: rgba(0, 184, 135, 0.5);
+      box-shadow: 0 0 0 4px rgba(0, 184, 135, 0.12);
+    }
+
+    .moments-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .moments-page-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .moments-page-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00b887, #7c3aed);
+      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.18);
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .moments-page-mark::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      border-radius: 50%;
+    }
+
+    .moments-page-mark::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ffffff;
+      transform: translate(-50%, -50%);
+    }
+
+    .moments-composer-card {
+      padding: 18px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+    }
+
+    .moments-feed {
+      display: grid;
+      gap: 18px;
+    }
+
+    .moment-card {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+      padding: 18px 20px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 18px 46px rgba(15, 63, 88, 0.11);
+    }
+
+    .moment-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 900;
+      text-decoration: none;
+      background: linear-gradient(135deg, #7c3aed, #00b887);
+      box-shadow: 0 10px 20px rgba(0, 184, 135, 0.18);
+    }
+
+    .moment-avatar:hover {
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    .moment-content {
+      min-width: 0;
+    }
+
+    .moment-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .moment-author {
+      color: #14213d;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .moment-author:hover {
+      color: #009b75;
+      text-decoration: none;
+    }
+
+    .moment-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #61708a;
+      white-space: nowrap;
+    }
+
+    .moment-time {
+      font-size: 12px;
+      color: #61708a;
+    }
+
+    .moment-text {
+      margin: 0 0 12px;
+      color: #1f2a44;
+      line-height: 1.72;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .moment-media-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin: 10px 0 12px;
+    }
+
+    .moment-media-item {
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #eef7f5;
+      border: 1px solid #dfe8ee;
+    }
+
+    .moment-media-item img,
+    .moment-media-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .moment-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
     .moment-comment-row {
       display: flex;
       align-items: stretch;
@@ -114,7 +372,7 @@
       min-height: 24px;
       border: 0;
       background: transparent;
-      color: var(--text);
+      color: #1f2a44;
       padding: 0;
       font: inherit;
       text-align: left;
@@ -137,19 +395,89 @@
       cursor: pointer;
       white-space: nowrap;
     }
+
+    .moment-comments {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #f4fbf9;
+      display: grid;
+      gap: 8px;
+    }
+
+    .moment-comment-author {
+      font-weight: 900;
+      color: #009b75;
+      text-decoration: none;
+    }
+
+    .moment-comment-author:hover {
+      text-decoration: none;
+      color: #007f63;
+    }
+
+    .moment-comment-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .moment-comment-input {
+      border-radius: 999px;
+      padding: 9px 14px;
+      min-height: 40px;
+    }
+
+    .moments-empty {
+      color: #61708a;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 18px 46px rgba(15, 63, 88, 0.11);
+    }
+
+    @media (max-width: 640px) {
+      .moment-card {
+        grid-template-columns: 40px 1fr;
+        gap: 12px;
+        padding: 16px 14px;
+      }
+
+      .moment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+      }
+
+      .moment-header,
+      .moment-meta {
+        align-items: flex-start;
+      }
+
+      .moment-header {
+        flex-direction: column;
+      }
+
+      .moment-media-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 
   <div id="moments-top"></div>
   {% if not show_composer %}
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-      <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
+    <div class="moments-page-header">
+      <div class="moments-page-title">
+        <span class="moments-page-mark" aria-hidden="true"></span>
+        <h1 class="page-title" style="margin-bottom:6px;">{{ page_title }}</h1>
+      </div>
       <a class="btn" href="{{ back_url }}">{{ back_label }}</a>
     </div>
     <p class="subtle">{{ subtitle }}</p>
   {% endif %}
 
   {% if show_composer %}
-    <div id="moments-composer" class="card moments-composer" style="display:{% if form.errors %}block{% else %}none{% endif %};">
+    <div id="moments-composer" class="moments-composer moments-composer-card" style="display:{% if form.errors %}block{% else %}none{% endif %};">
       <form method="post" enctype="multipart/form-data" class="grid" style="gap:12px;">
         {% csrf_token %}
         {% if form.non_field_errors %}
@@ -172,17 +500,17 @@
     </div>
   {% endif %}
 
-  <div class="moments-feed" style="display:grid; gap:14px;">
+  <div class="moments-feed">
     {% for moment in moments %}
-      <article id="moment-{{ moment.pk }}" class="card" style="display:grid; grid-template-columns:44px 1fr; gap:12px; padding:14px 16px;">
-        <a href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}" style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(34,197,94,0.9));display:flex;align-items:center;justify-content:center;font-weight:800;color:white;text-decoration:none;">
+      <article id="moment-{{ moment.pk }}" class="moment-card">
+        <a class="moment-avatar" href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}">
           {{ moment.user.username|first|upper }}
         </a>
-        <div style="min-width:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;">
-            <a href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ moment.user.username }}</a>
-            <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
-              <span style="font-size:12px;color:var(--muted);">{{ moment.created_at|date:"Y-m-d H:i" }}</span>
+        <div class="moment-content">
+          <div class="moment-header">
+            <a class="moment-author" href="{% url 'diary:public_profile' moment.user.username %}?from=moments&moment={{ moment.pk }}">{{ moment.user.username }}</a>
+            <div class="moment-meta">
+              <span class="moment-time">{{ moment.created_at|date:"Y-m-d H:i" }}</span>
               {% if moment.user_id == user.id %}
                 <form class="moment-delete-form" method="post" action="{% url 'diary:moment_delete' moment.pk %}" onsubmit="return confirm('确定要删除这条朋友圈吗？评论和点赞也会一起删除。');">
                   {% csrf_token %}
@@ -193,24 +521,24 @@
           </div>
 
           {% if moment.text %}
-            <p style="margin:0 0 10px;line-height:1.65;white-space:pre-wrap;">{{ moment.text }}</p>
+            <p class="moment-text">{{ moment.text }}</p>
           {% endif %}
 
           {% if moment.media_items.all %}
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;">
+            <div class="moment-media-grid">
               {% for media in moment.media_items.all %}
-                <div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);">
+                <div class="moment-media-item">
                   {% if media.media_type == "image" %}
-                    <img src="{% url 'diary:media_serve' media.file.name %}" alt="朋友圈图片" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <img src="{% url 'diary:media_serve' media.file.name %}" alt="朋友圈图片">
                   {% else %}
-                    <video src="{% url 'diary:media_serve' media.file.name %}" controls style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                    <video src="{% url 'diary:media_serve' media.file.name %}" controls></video>
                   {% endif %}
                 </div>
               {% endfor %}
             </div>
           {% endif %}
 
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
+          <div class="moment-actions">
             <form class="js-like-form" method="post" action="{% url 'diary:moment_like' moment.pk %}">
               {% csrf_token %}
               <button class="btn {% if moment.is_liked_by_me %}btn-primary{% endif %}" type="submit" style="font-size:12px;padding:6px 10px;">
@@ -220,11 +548,11 @@
             </form>
           </div>
 
-          <div class="js-comments" style="margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);display:{% if moment.comments.all %}grid{% else %}none{% endif %};gap:6px;">
+          <div class="js-comments moment-comments" style="display:{% if moment.comments.all %}grid{% else %}none{% endif %};">
             {% if moment.comments.all %}
               {% for comment in moment.comments.all %}
                 <div class="moment-comment-row" data-comment-id="{{ comment.pk }}">
-                  <a href="{% url 'diary:public_profile' comment.user.username %}?from=moments&moment={{ moment.pk }}" style="font-weight:800;color:var(--text);text-decoration:none;">{{ comment.user.username }}：</a>
+                  <a class="moment-comment-author" href="{% url 'diary:public_profile' comment.user.username %}?from=moments&moment={{ moment.pk }}">{{ comment.user.username }}：</a>
                   <button
                     type="button"
                     class="moment-comment-action js-comment-action"
@@ -237,16 +565,16 @@
             {% endif %}
           </div>
 
-          <form class="js-comment-form" method="post" action="{% url 'diary:moment_comment' moment.pk %}" style="display:flex;gap:8px;margin-top:10px;">
+          <form class="js-comment-form moment-comment-form" method="post" action="{% url 'diary:moment_comment' moment.pk %}">
             {% csrf_token %}
             <input type="hidden" name="reply_to_username" value="">
-            <input type="text" name="text" maxlength="500" placeholder="评论" style="border-radius:999px;padding:8px 12px;">
+            <input class="moment-comment-input" type="text" name="text" maxlength="500" placeholder="评论">
             <button class="btn" type="submit" style="font-size:12px;padding:7px 12px;white-space:nowrap;">发送</button>
           </form>
         </div>
       </article>
     {% empty %}
-      <div class="card">
+      <div class="card moments-empty">
         <p style="margin:0;">还没有朋友圈动态。</p>
       </div>
     {% endfor %}
@@ -346,9 +674,7 @@
 
       profileLink.href = `${comment.profile_url}?from=moments&moment=${encodeURIComponent(momentId)}`;
       profileLink.textContent = `${comment.username}：`;
-      profileLink.style.fontWeight = "800";
-      profileLink.style.color = "var(--text)";
-      profileLink.style.textDecoration = "none";
+      profileLink.className = "moment-comment-author";
 
       actionButton.type = "button";
       actionButton.className = "moment-comment-action js-comment-action";

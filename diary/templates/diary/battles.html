@@ -1,28 +1,346 @@
 {% extends "diary/base.html" %}
 
+{% block body_class %}battle-page{% endblock %}
+
 {% block content %}
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <div>
-      <h1 class="page-title" style="margin-bottom:6px;">约战大厅</h1>
+  <style>
+    body.battle-page {
+      --battle-green: #00b887;
+      --battle-green-dark: #009b75;
+      --battle-purple: #6d5dfc;
+      --battle-orange: #df6a00;
+      --battle-ink: #14213d;
+      --battle-muted: #61708a;
+      --battle-line: #dfe8ee;
+      --battle-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+      color: var(--battle-ink);
+      background:
+        radial-gradient(760px 420px at 10% 0%, rgba(124, 58, 237, 0.16), transparent 58%),
+        radial-gradient(760px 420px at 92% 0%, rgba(0, 184, 135, 0.16), transparent 60%),
+        linear-gradient(180deg, rgba(223, 255, 249, 0.92) 0%, #f7fbff 72%);
+    }
+
+    body.battle-page .container {
+      width: min(1420px, calc(100% - 56px));
+      padding-top: 18px;
+    }
+
+    body.battle-page .topbar {
+      padding: 12px 18px;
+      border-radius: 0;
+      border-width: 0 0 1px;
+      border-color: rgba(15, 63, 88, 0.11);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 28px rgba(15, 63, 88, 0.08);
+    }
+
+    body.battle-page .brand {
+      color: var(--battle-green-dark);
+      font-size: 20px;
+    }
+
+    body.battle-page .brand-badge {
+      position: relative;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--battle-green), #10b981);
+      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.24);
+    }
+
+    body.battle-page .brand-badge::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 3px solid rgba(255, 255, 255, 0.92);
+      border-radius: 50%;
+    }
+
+    body.battle-page .brand-badge::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      left: 50%;
+      top: 50%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      transform: translate(-50%, -50%);
+    }
+
+    body.battle-page .btn {
+      min-height: 42px;
+      border-radius: 10px;
+      border-color: transparent;
+      background: rgba(255, 255, 255, 0.8);
+      color: #334155;
+      box-shadow: none;
+    }
+
+    body.battle-page .btn:hover {
+      transform: translateY(-1px);
+      color: var(--battle-green-dark);
+      background: rgba(0, 184, 135, 0.09);
+      text-decoration: none;
+    }
+
+    body.battle-page .btn-primary,
+    body.battle-page .nav .btn-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--battle-purple), #5b5ff5);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(91, 95, 245, 0.24);
+    }
+
+    body.battle-page .nav .btn-primary:first-child {
+      background: linear-gradient(135deg, var(--battle-green), #05a884) !important;
+      box-shadow: 0 12px 26px rgba(0, 184, 135, 0.24);
+    }
+
+    body.battle-page .pill {
+      color: #5b6475;
+      background: #f6f8fb;
+      border-color: #e5ebf0;
+    }
+
+    body.battle-page .pill strong {
+      color: var(--battle-ink);
+    }
+
+    body.battle-page input,
+    body.battle-page textarea {
+      border-color: var(--battle-line);
+      background: #ffffff;
+      color: var(--battle-ink);
+    }
+
+    body.battle-page input:focus,
+    body.battle-page textarea:focus {
+      border-color: rgba(0, 184, 135, 0.5);
+      box-shadow: 0 0 0 4px rgba(0, 184, 135, 0.12);
+    }
+
+    .battle-hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin: 34px 0 18px;
+    }
+
+    .battle-title-wrap {
+      display: grid;
+      gap: 10px;
+    }
+
+    .battle-title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .battle-title-mark {
+      width: 34px;
+      height: 34px;
+      border: 4px solid var(--battle-green-dark);
+      border-radius: 50%;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .battle-title-mark::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 3px solid var(--battle-green-dark);
+      border-radius: 50%;
+    }
+
+    .battle-title-mark::after {
+      content: "";
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background: var(--battle-green-dark);
+    }
+
+    body.battle-page .page-title {
+      margin: 0;
+      color: var(--battle-ink);
+      font-size: 36px;
+      line-height: 1.15;
+      font-weight: 900;
+    }
+
+    body.battle-page .subtle {
+      margin: 0 0 0 48px;
+      color: #38506a;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .battle-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .battle-notices {
+      margin-bottom: 22px;
+      display: grid;
+      gap: 8px;
+      padding: 18px 22px;
+      border: 1px solid rgba(223, 106, 0, 0.18);
+      border-left: 5px solid #ff8a00;
+      border-radius: 12px;
+      background: #fff8ea;
+      color: #b54708;
+      box-shadow: 0 12px 24px rgba(223, 106, 0, 0.08);
+    }
+
+    .battle-form-card {
+      margin-bottom: 24px;
+      padding: 24px 28px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--battle-shadow);
+    }
+
+    .battle-form-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .battle-form-card .grid-2 {
+      gap: 16px;
+    }
+
+    .battle-form-card label {
+      color: var(--battle-ink);
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .battle-submit-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .battle-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .battle-card {
+      padding: 20px 22px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: var(--battle-shadow);
+    }
+
+    .battle-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .battle-card-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--battle-ink);
+      margin-bottom: 7px;
+    }
+
+    .battle-card-meta {
+      margin: 0;
+      color: var(--battle-muted);
+      line-height: 1.6;
+    }
+
+    .battle-note {
+      margin: 14px 0 0;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: #1f2a44;
+    }
+
+    .battle-response-panel {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #f4fbf9;
+      display: grid;
+      gap: 7px;
+    }
+
+    .battle-response-panel p {
+      margin: 0;
+    }
+
+    .battle-response-panel .muted {
+      color: var(--battle-muted);
+    }
+
+    .battle-empty {
+      padding: 20px 22px;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--battle-muted);
+      box-shadow: var(--battle-shadow);
+    }
+
+    @media (max-width: 900px) {
+      body.battle-page .container {
+        width: min(100% - 28px, 1420px);
+      }
+
+      body.battle-page .topbar {
+        border-radius: 16px;
+      }
+
+      body.battle-page .page-title {
+        font-size: 30px;
+      }
+
+      body.battle-page .subtle {
+        margin-left: 0;
+      }
+
+      .battle-form-card {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+
+  <section class="battle-hero">
+    <div class="battle-title-wrap">
+      <div class="battle-title-row">
+        <span class="battle-title-mark" aria-hidden="true"></span>
+        <h1 class="page-title">约战大厅</h1>
+      </div>
       <p class="subtle">发布约战请求，或加入其他人的台球约战。</p>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div class="battle-actions">
       <a class="btn" href="{% url 'diary:battle_created' %}">我发起的</a>
       <a class="btn" href="{% url 'diary:battle_history' %}">约战记录</a>
       <a class="btn" href="{% url 'diary:record_list' %}">返回</a>
     </div>
-  </div>
+  </section>
 
   {% if battle_notices %}
-    <div class="card" style="margin-bottom:18px;display:grid;gap:8px;">
+    <div class="battle-notices">
       {% for notice in battle_notices %}
         <p style="margin:0;font-weight:750;">{{ notice }}</p>
       {% endfor %}
     </div>
   {% endif %}
 
-  <div class="card" style="margin-bottom:18px;">
-    <form method="post" class="grid" style="gap:12px;">
+  <div class="battle-form-card">
+    <form method="post" class="battle-form-grid">
       {% csrf_token %}
       {{ form.non_field_errors }}
       <div class="grid grid-2">
@@ -47,19 +365,19 @@
         {{ form.note }}
         {{ form.note.errors }}
       </div>
-      <div style="display:flex;justify-content:flex-end;">
+      <div class="battle-submit-row">
         <button class="btn btn-primary" type="submit">发布约战</button>
       </div>
     </form>
   </div>
 
-  <div class="grid" style="gap:14px;">
+  <div class="battle-list">
     {% for battle in battles %}
-      <article class="card">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+      <article class="battle-card">
+        <div class="battle-card-head">
           <div>
-            <div style="font-size:18px;font-weight:850;margin-bottom:6px;">{{ battle.battle_time|date:"Y-m-d H:i" }} · {{ battle.location }}</div>
-            <p style="margin:0;color:var(--muted);">发起人：{{ battle.user.username }} · 寻找 {{ battle.player_count }} 人</p>
+            <div class="battle-card-title">{{ battle.battle_time|date:"Y-m-d H:i" }} · {{ battle.location }}</div>
+            <p class="battle-card-meta">发起人：{{ battle.user.username }} · 寻找 {{ battle.player_count }} 人</p>
           </div>
           {% if battle.user_id != user.id %}
             {% if battle.has_joined %}
@@ -78,22 +396,22 @@
         </div>
 
         {% if battle.note %}
-          <p style="margin:12px 0 0;line-height:1.65;white-space:pre-wrap;">{{ battle.note }}</p>
+          <p class="battle-note">{{ battle.note }}</p>
         {% endif %}
 
-        <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--surface-2);display:grid;gap:6px;">
+        <div class="battle-response-panel">
           <p style="margin:0;font-weight:750;">当前已有{{ battle.response_count }}人应战</p>
           {% if battle.user_id == user.id %}
             {% if battle.responses.all %}
-              <p style="margin:0;color:var(--muted);">应战用户：{% for response in battle.responses.all %}{{ response.user.username }}{% if not forloop.last %}、{% endif %}{% endfor %}</p>
+              <p class="muted">应战用户：{% for response in battle.responses.all %}{{ response.user.username }}{% if not forloop.last %}、{% endif %}{% endfor %}</p>
             {% else %}
-              <p style="margin:0;color:var(--muted);">暂时还没有人应战。</p>
+              <p class="muted">暂时还没有人应战。</p>
             {% endif %}
           {% endif %}
         </div>
       </article>
     {% empty %}
-      <div class="card"><p style="margin:0;">暂无约战请求。</p></div>
+      <div class="battle-empty"><p style="margin:0;">暂无约战请求。</p></div>
     {% endfor %}
   </div>
 {% endblock %}
