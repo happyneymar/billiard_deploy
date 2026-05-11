@@ -1,6 +1,8 @@
 from datetime import timedelta
+from unittest import mock
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -15,6 +17,7 @@ from diary.models import (
     Moment,
     MomentComment,
     MomentLike,
+    MomentMedia,
     PrivateMessage,
 )
 
@@ -85,6 +88,41 @@ class MomentCommentTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertTrue(MomentComment.objects.filter(pk=comment.pk).exists())
+
+    def test_moment_media_upload_failure_shows_form_error(self):
+        self.client.force_login(self.author)
+        uploaded = SimpleUploadedFile(
+            "shot.jpg",
+            b"fake-image",
+            content_type="image/jpeg",
+        )
+        storage = MomentMedia._meta.get_field("file").storage
+
+        with mock.patch.object(storage, "save", side_effect=RuntimeError("cloudinary failed")):
+            response = self.client.post(
+                reverse("diary:moments"),
+                {"text": "带图朋友圈", "media_files": uploaded},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "媒体文件上传失败")
+        self.assertFalse(Moment.objects.filter(text="带图朋友圈").exists())
+
+    def test_moment_media_delete_failure_does_not_500(self):
+        self.client.force_login(self.author)
+        media = MomentMedia.objects.create(
+            moment=self.moment,
+            file="users/1/moments/2026-05-11/missing.jpg",
+            media_type="image",
+        )
+        storage = MomentMedia._meta.get_field("file").storage
+
+        with mock.patch.object(storage, "delete", side_effect=RuntimeError("cloudinary failed")):
+            response = self.client.post(reverse("diary:moment_delete", kwargs={"pk": self.moment.pk}))
+
+        self.assertRedirects(response, reverse("diary:moments"), fetch_redirect_response=False)
+        self.assertFalse(Moment.objects.filter(pk=self.moment.pk).exists())
+        self.assertFalse(MomentMedia.objects.filter(pk=media.pk).exists())
 
     def test_comment_username_links_to_public_profile(self):
         MomentComment.objects.create(

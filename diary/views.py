@@ -38,7 +38,6 @@ from diary.models import (
     validate_secure_filename,
 )
 
-
 # 文件上传验证器实例
 media_validator = MediaFileValidator()
 
@@ -78,6 +77,13 @@ def _sanitize_input(value, max_length=255, pattern=None):
     if pattern:
         value = re.sub(pattern, "", value)
     return value
+
+
+def _media_storage_error_message(action: str) -> str:
+    return (
+        f"媒体文件{action}失败，请检查 Cloudinary 的 CLOUDINARY_URL 是否使用真实的 "
+        "API Key/API Secret/Cloud Name，并确认文件没有超过 Cloudinary 免费版限制。"
+    )
 
 
 def register(request):
@@ -674,16 +680,20 @@ def moments_feed(request):
             if not text and not valid_media:
                 form.add_error(None, "请填写文字，或上传至少一个图片/视频。")
             else:
-                with transaction.atomic():
-                    moment = Moment.objects.create(user=request.user, text=text)
-                    for uploaded in valid_media:
-                        MomentMedia.objects.create(
-                            moment=moment,
-                            file=uploaded,
-                            media_type=MomentMedia.guess_media_type(uploaded),
-                        )
-                messages.success(request, "朋友圈已发布。")
-                return redirect(f"{reverse('diary:moments')}?posted=1#moments-top")
+                try:
+                    with transaction.atomic():
+                        moment = Moment.objects.create(user=request.user, text=text)
+                        for uploaded in valid_media:
+                            MomentMedia.objects.create(
+                                moment=moment,
+                                file=uploaded,
+                                media_type=MomentMedia.guess_media_type(uploaded),
+                            )
+                except Exception:
+                    form.add_error(None, _media_storage_error_message("上传"))
+                else:
+                    messages.success(request, "朋友圈已发布。")
+                    return redirect(f"{reverse('diary:moments')}?posted=1#moments-top")
     else:
         form = MomentForm()
 
@@ -805,10 +815,17 @@ def moment_delete(request, pk: int):
         pk=pk,
         user=request.user,
     )
+    delete_failed = False
     for media in moment.media_items.all():
-        media.file.delete(save=False)
+        try:
+            media.file.delete(save=False)
+        except Exception:
+            delete_failed = True
     moment.delete()
-    messages.success(request, "朋友圈已删除。")
+    if delete_failed:
+        messages.warning(request, _media_storage_error_message("删除"))
+    else:
+        messages.success(request, "朋友圈已删除。")
     return redirect(request.META.get("HTTP_REFERER") or reverse("diary:moments"))
 
 
