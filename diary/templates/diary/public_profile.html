@@ -8,10 +8,10 @@
   <div class="card" style="padding:14px 16px; margin-bottom:18px;">
     {# 时间段选择标签 #}
     <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-      <a href="?period=month{% if profile_from_moments %}&from=moments{% if profile_moment_id %}&moment={{ profile_moment_id }}{% endif %}{% endif %}" class="btn {% if period == 'month' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">本月</a>
-      <a href="?period=half_year{% if profile_from_moments %}&from=moments{% if profile_moment_id %}&moment={{ profile_moment_id }}{% endif %}{% endif %}" class="btn {% if period == 'half_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">半年内</a>
-      <a href="?period=one_year{% if profile_from_moments %}&from=moments{% if profile_moment_id %}&moment={{ profile_moment_id }}{% endif %}{% endif %}" class="btn {% if period == 'one_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">一年内</a>
-      <a href="?period=all{% if profile_from_moments %}&from=moments{% if profile_moment_id %}&moment={{ profile_moment_id }}{% endif %}{% endif %}" class="btn {% if period == 'all' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">历史总计</a>
+      <a href="?period=month{{ profile_extra_query }}" class="btn {% if period == 'month' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">本月</a>
+      <a href="?period=half_year{{ profile_extra_query }}" class="btn {% if period == 'half_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">半年内</a>
+      <a href="?period=one_year{{ profile_extra_query }}" class="btn {% if period == 'one_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">一年内</a>
+      <a href="?period=all{{ profile_extra_query }}" class="btn {% if period == 'all' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">历史总计</a>
     </div>
     {# 统计数据 #}
     <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; text-align:center;">

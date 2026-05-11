@@ -1,1 +1,5 @@
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+
+
+cd C:\Users\m1391\Desktop\billiard_deploy_ready
+C:\Users\m1391\Desktop\cursor_billiard\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000

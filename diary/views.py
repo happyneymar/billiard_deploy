@@ -607,22 +607,28 @@ def public_profile(request, username: str):
 
     back_label = "返回我的记录"
     back_url = reverse("diary:record_list")
-    from_moments = request.GET.get("from") == "moments"
-    from_friends = request.GET.get("from") == "friends"
+    source = request.GET.get("from")
+    from_moments = source == "moments"
+    from_friends = source == "friends"
     moment_id = request.GET.get("moment", "")
+    source_params = {}
     if from_moments:
         back_label = "返回朋友圈"
         back_url = reverse("diary:moments")
+        source_params["from"] = "moments"
         if moment_id.isdigit():
             back_url = f"{back_url}#moment-{moment_id}"
+            source_params["moment"] = moment_id
     elif from_friends:
         back_label = "返回我的好友界面"
         back_url = reverse("diary:friends")
+        source_params["from"] = "friends"
+
+    source_query = urlencode(source_params)
+    profile_extra_query = f"&{source_query}" if source_query else ""
     user_moments_url = reverse("diary:user_moments", kwargs={"username": target.username})
-    if from_moments:
-        user_moments_url = f"{user_moments_url}?from=moments"
-        if moment_id.isdigit():
-            user_moments_url = f"{user_moments_url}&moment={moment_id}"
+    if source_query:
+        user_moments_url = f"{user_moments_url}?{source_query}"
 
     stats = _build_stats(base_qs)
     records = _filter_by_period(base_qs, period).order_by("-date", "-created_at")
@@ -639,6 +645,7 @@ def public_profile(request, username: str):
             "profile_back_url": back_url,
             "profile_from_moments": from_moments,
             "profile_moment_id": moment_id if moment_id.isdigit() else "",
+            "profile_extra_query": profile_extra_query,
             "profile_user_moments_url": user_moments_url,
         },
     )
@@ -740,12 +747,16 @@ def user_moments(request, username: str):
         subtitle = "以下是你发布过的朋友圈。"
     else:
         back_url = reverse("diary:public_profile", kwargs={"username": target.username})
-        from_moments = request.GET.get("from") == "moments"
+        source = request.GET.get("from")
+        from_moments = source == "moments"
+        from_friends = source == "friends"
         moment_id = request.GET.get("moment", "")
         if from_moments:
             back_url = f"{back_url}?from=moments"
             if moment_id.isdigit():
                 back_url = f"{back_url}&moment={moment_id}"
+        elif from_friends:
+            back_url = f"{back_url}?from=friends"
         back_label = "返回TA的主页"
         page_title = f"{target.username} 的朋友圈"
         subtitle = f"以下是 {target.username} 发布过的朋友圈。"

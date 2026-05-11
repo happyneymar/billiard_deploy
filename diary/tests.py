@@ -417,7 +417,26 @@ class FriendViewTests(TestCase):
 
         self.assertContains(response, "返回我的好友界面")
         self.assertContains(response, reverse("diary:friends"))
+        self.assertContains(
+            response,
+            f"{reverse('diary:user_moments', kwargs={'username': self.other.username})}?from=friends",
+        )
+        self.assertContains(response, "?period=half_year&amp;from=friends")
         self.assertNotContains(response, "返回我的记录")
+
+    def test_friend_profile_to_user_moments_returns_to_friend_context(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("diary:user_moments", kwargs={"username": self.other.username}),
+            {"from": "friends"},
+        )
+
+        self.assertContains(response, "返回TA的主页")
+        self.assertContains(
+            response,
+            f"{reverse('diary:public_profile', kwargs={'username': self.other.username})}?from=friends",
+        )
 
     def test_send_friend_request_by_username(self):
         self.client.force_login(self.user)
