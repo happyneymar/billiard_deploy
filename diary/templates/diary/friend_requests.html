@@ -1,15 +1,15 @@
 {% extends "diary/base.html" %}
 
 {% block content %}
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <div>
+  <div class="page-header-actions">
+    <div class="page-header-title">
       <div class="page-title-row">
         <span class="page-title-mark" aria-hidden="true"></span>
-        <h1 class="page-title" style="margin-bottom:6px;">收到的好友申请：（{{ pending_count }}）</h1>
+        <h1 class="page-title">收到的好友申请：（{{ pending_count }}）</h1>
       </div>
       <p class="subtle">处理其他用户发来的好友申请。</p>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div class="page-header-buttons">
       <a class="btn btn-primary" href="{% url 'diary:friend_add' %}">添加好友</a>
       <a class="btn" href="{% url 'diary:friends' %}">返回</a>
     </div>

@@ -209,15 +209,14 @@
     .moments-page-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .moments-page-mark {
       width: 34px;
       height: 34px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #00b887, #7c3aed);
-      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.18);
+      border: 4px solid var(--moments-green-dark);
+      border-radius: 50%;
       position: relative;
       flex: 0 0 auto;
     }
@@ -225,21 +224,17 @@
     .moments-page-mark::before {
       content: "";
       position: absolute;
-      inset: 9px;
-      border: 2px solid rgba(255, 255, 255, 0.92);
+      inset: 6px;
+      border: 3px solid var(--moments-green-dark);
       border-radius: 50%;
     }
 
     .moments-page-mark::after {
       content: "";
       position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 6px;
-      height: 6px;
+      inset: 13px;
       border-radius: 50%;
-      background: #ffffff;
-      transform: translate(-50%, -50%);
+      background: var(--moments-green-dark);
     }
 
     .moments-composer-card {

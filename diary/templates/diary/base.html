@@ -161,15 +161,40 @@
       .page-title-row {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
+      }
+
+      .page-hero,
+      .page-header-actions {
+        margin-top: 30px;
+        margin-bottom: 24px;
+      }
+
+      .page-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      .page-header-title {
+        min-width: 0;
+      }
+
+      .page-header-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
       }
 
       .page-title-mark {
         position: relative;
         flex: 0 0 auto;
-        width: 24px;
-        height: 24px;
-        border: 3px solid #009b75;
+        width: 34px;
+        height: 34px;
+        border: 4px solid #009b75;
         border-radius: 50%;
       }
 
@@ -178,25 +203,32 @@
         content: "";
         position: absolute;
         border-radius: 50%;
-        border: 3px solid #009b75;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
       }
 
       .page-title-mark::before {
-        width: 11px;
-        height: 11px;
+        inset: 6px;
+        border: 3px solid #009b75;
       }
 
       .page-title-mark::after {
-        width: 3px;
-        height: 3px;
+        inset: 13px;
         background: #009b75;
       }
 
       .page-title { margin: 24px 0 12px; color: var(--text); font-size: 32px; font-weight: 900; letter-spacing: 0; }
-      .page-title-row .page-title { margin-bottom: 6px; }
+      .page-title-row .page-title {
+        margin: 0;
+        color: var(--text);
+        font-size: 32px;
+        line-height: 1.15;
+        font-weight: 900;
+      }
+      .page-title-row + .subtle {
+        margin: 12px 0 0 48px;
+        color: #38506a;
+        font-size: 17px;
+        line-height: 1.7;
+      }
       .subtle { color: var(--muted); margin: 0 0 14px; }
 
       .card {
@@ -347,4 +379,3 @@
     </script>
   </body>
 </html>
-

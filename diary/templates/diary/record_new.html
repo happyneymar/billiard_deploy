@@ -1,11 +1,13 @@
 {% extends "diary/base.html" %}
 
 {% block content %}
-  <div class="page-title-row">
-    <span class="page-title-mark" aria-hidden="true"></span>
-    <h1 class="page-title">新增当天记录</h1>
-  </div>
-  <p class="subtle">填完直接保存到历史里；同一天再次保存会自动覆盖统计并追加媒体。</p>
+  <section class="page-hero">
+    <div class="page-title-row">
+      <span class="page-title-mark" aria-hidden="true"></span>
+      <h1 class="page-title">新增当天记录</h1>
+    </div>
+    <p class="subtle">填完直接保存到历史里；同一天再次保存会自动覆盖统计并追加媒体。</p>
+  </section>
 
   <div class="card">
     <form method="post" enctype="multipart/form-data">
