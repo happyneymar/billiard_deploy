@@ -25,6 +25,7 @@
               {{ friend.username }}
             </a>
             <a class="btn" href="{% url 'diary:private_message_new' friend.username %}">私信</a>
+            <a class="btn" href="{% url 'diary:friend_history' friend.username %}">历史</a>
             <a class="btn btn-primary" href="{% url 'diary:direct_battle_new' friend.username %}">约战</a>
           </div>
         {% endfor %}

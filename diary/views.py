@@ -420,6 +420,37 @@ def friends(request):
 
 
 @login_required
+def friend_history(request, username: str):
+    friend = get_object_or_404(User, username=username)
+    if not Friendship.are_friends(request.user, friend):
+        messages.error(request, "只能查看好友之间的对战历史。")
+        return redirect("diary:friends")
+
+    period = request.GET.get("period", "month")
+    if period not in {"month", "half_year", "one_year", "all"}:
+        period = "month"
+
+    base_qs = DailyRecord.objects.filter(
+        user=request.user,
+        opponent_name__iexact=friend.username,
+    )
+    stats = _build_stats(base_qs)
+    records = _filter_by_period(base_qs, period).order_by("-date", "-created_at")
+
+    return render(
+        request,
+        "diary/friend_history.html",
+        {
+            "friend": friend,
+            "records": records,
+            "stats": stats,
+            "period": period,
+            "selected_stats": stats[period],
+        },
+    )
+
+
+@login_required
 def friend_add(request):
     if request.method == "POST":
         username = request.POST.get("username", "").strip()

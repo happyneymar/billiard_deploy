@@ -1,0 +1,322 @@
+{% extends "diary/base.html" %}
+
+{% block body_class %}friend-history-page{% endblock %}
+
+{% block content %}
+  <style>
+    body.friend-history-page {
+      --history-green: #00b887;
+      --history-green-dark: #009b75;
+      --history-blue: #2463ff;
+      --history-purple: #7c3aed;
+      --history-orange: #df6a00;
+      --history-ink: #14213d;
+      --history-soft: #5c6b82;
+      --history-line: #d9e5ea;
+      --history-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+    }
+
+    .friend-summary {
+      margin-bottom: 24px;
+      padding: 18px 22px;
+      border: 1px solid rgba(0, 184, 135, 0.18);
+      border-left: 5px solid var(--history-green);
+      border-radius: 10px;
+      background: #f0fffa;
+      color: #007f62;
+      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.08);
+    }
+
+    .friend-stats-card {
+      margin-bottom: 26px;
+      padding: 28px 28px 26px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--history-shadow);
+    }
+
+    .friend-period-tabs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--history-line);
+    }
+
+    .friend-period-tabs .btn {
+      position: relative;
+      min-height: 38px;
+      padding: 8px 16px;
+      border-radius: 0;
+      color: #41526b;
+      font-size: 15px !important;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .friend-period-tabs .btn-primary {
+      color: var(--history-green-dark);
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    .friend-period-tabs .btn-primary::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: -15px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--history-green);
+    }
+
+    .friend-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      text-align: center;
+    }
+
+    .friend-stat-grid + .friend-stat-grid {
+      margin-top: 18px;
+    }
+
+    .friend-stat {
+      min-height: 98px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: #f6f8fb;
+    }
+
+    .friend-stat-primary:nth-child(1) { background: #edf8ff; }
+    .friend-stat-primary:nth-child(2) { background: #e9fff5; }
+    .friend-stat-primary:nth-child(3) { background: #e8fff1; }
+    .friend-stat-primary:nth-child(4) { background: #fbf1ff; }
+    .friend-stat-primary:nth-child(5) { background: #fff7e7; }
+
+    .friend-stat-label {
+      color: #52627a;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .friend-stat-value {
+      margin-top: 8px;
+      color: var(--history-ink);
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .friend-stat-primary:nth-child(1) .friend-stat-value { color: var(--history-blue); }
+    .friend-stat-primary:nth-child(2) .friend-stat-value,
+    .friend-stat-primary:nth-child(3) .friend-stat-value { color: var(--history-green-dark); }
+    .friend-stat-primary:nth-child(4) .friend-stat-value { color: var(--history-purple); }
+    .friend-stat-primary:nth-child(5) .friend-stat-value { color: var(--history-orange); }
+
+    .friend-table-card {
+      padding: 0;
+      overflow-x: auto;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: var(--history-shadow);
+    }
+
+    body.friend-history-page .table {
+      min-width: 960px;
+      border: 0;
+      border-radius: 0;
+    }
+
+    body.friend-history-page .table th {
+      padding: 17px 18px;
+      color: #ffffff;
+      background: var(--history-green);
+      border-bottom: 0;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    body.friend-history-page .table th:first-child {
+      border-top-left-radius: 16px;
+    }
+
+    body.friend-history-page .table th:last-child {
+      border-top-right-radius: 16px;
+    }
+
+    body.friend-history-page .table td {
+      padding: 18px;
+      color: var(--history-ink);
+      border-bottom: 1px solid #edf2f6;
+      background: #ffffff;
+      font-size: 15px;
+    }
+
+    body.friend-history-page .badge-8ball {
+      color: #7c3aed;
+      background: #f1e6ff;
+      border-color: #e3ccff;
+    }
+
+    body.friend-history-page .badge-score {
+      color: var(--history-green-dark);
+      background: #e5fff4;
+      border-color: #bff5de;
+    }
+
+    .friend-empty {
+      color: var(--history-soft);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--history-shadow);
+    }
+
+    @media (max-width: 560px) {
+      .friend-stats-card {
+        padding: 20px 16px;
+      }
+
+      .friend-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+    }
+  </style>
+
+  <div class="page-header-actions">
+    <div class="page-header-title">
+      <div class="page-title-row">
+        <span class="page-title-mark" aria-hidden="true"></span>
+        <h1 class="page-title">和 {{ friend.username }} 的历史</h1>
+      </div>
+      <p class="subtle">只统计你记录里对手名为 {{ friend.username }} 的黑八/追分战绩。</p>
+    </div>
+    <div class="page-header-buttons">
+      <a class="btn" href="{% url 'diary:friends' %}">返回好友</a>
+      <a class="btn btn-primary" href="{% url 'diary:direct_battle_new' friend.username %}">约战</a>
+    </div>
+  </div>
+
+  <div class="friend-summary">
+    <p style="margin:0;font-weight:750;">
+      历史记录共 {{ selected_stats.total_matches }} 场；
+      黑八 {{ selected_stats.eight_ball_matches }} 场，胜率 {{ selected_stats.eight_ball_win_rate }}%；
+      追分 {{ selected_stats.score_matches }} 场，胜率 {{ selected_stats.score_win_rate }}%。
+    </p>
+  </div>
+
+  <div class="friend-stats-card">
+    <div class="friend-period-tabs">
+      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% endif %}">本月</a>
+      <a href="?period=half_year" class="btn {% if period == 'half_year' %}btn-primary{% endif %}">半年内</a>
+      <a href="?period=one_year" class="btn {% if period == 'one_year' %}btn-primary{% endif %}">一年内</a>
+      <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% endif %}">历史总计</a>
+    </div>
+
+    <div class="friend-stat-grid">
+      <div class="friend-stat friend-stat-primary">
+        <div class="friend-stat-label">总场数</div>
+        <div class="friend-stat-value">{{ selected_stats.total_matches }}</div>
+      </div>
+      <div class="friend-stat friend-stat-primary">
+        <div class="friend-stat-label">黑八场数</div>
+        <div class="friend-stat-value">{{ selected_stats.eight_ball_matches }}</div>
+      </div>
+      <div class="friend-stat friend-stat-primary">
+        <div class="friend-stat-label">黑八胜率</div>
+        <div class="friend-stat-value">{{ selected_stats.eight_ball_win_rate }}%</div>
+      </div>
+      <div class="friend-stat friend-stat-primary">
+        <div class="friend-stat-label">追分场数</div>
+        <div class="friend-stat-value">{{ selected_stats.score_matches }}</div>
+      </div>
+      <div class="friend-stat friend-stat-primary">
+        <div class="friend-stat-label">追分胜率</div>
+        <div class="friend-stat-value">{{ selected_stats.score_win_rate }}%</div>
+      </div>
+    </div>
+    <div class="friend-stat-grid">
+      <div class="friend-stat">
+        <div class="friend-stat-label">接清</div>
+        <div class="friend-stat-value">{{ selected_stats.clear_in }}</div>
+      </div>
+      <div class="friend-stat">
+        <div class="friend-stat-label">炸清</div>
+        <div class="friend-stat-value">{{ selected_stats.clear_boom }}</div>
+      </div>
+      <div class="friend-stat">
+        <div class="friend-stat-label">大金</div>
+        <div class="friend-stat-value">{{ selected_stats.big_jin }}</div>
+      </div>
+      <div class="friend-stat">
+        <div class="friend-stat-label">小金</div>
+        <div class="friend-stat-value">{{ selected_stats.small_jin }}</div>
+      </div>
+      <div class="friend-stat">
+        <div class="friend-stat-label">黄金九</div>
+        <div class="friend-stat-value">{{ selected_stats.golden_nine }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if records %}
+    <div class="friend-table-card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>玩法</th>
+            <th>对手</th>
+            <th>战绩</th>
+            <th>接清</th>
+            <th>炸清</th>
+            <th>大金</th>
+            <th>小金</th>
+            <th>黄金九</th>
+            <th>犯规</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            <tr>
+              <td>{{ r.date }}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  <span class="badge-8ball">黑八</span>
+                {% else %}
+                  <span class="badge-score">追分</span>
+                {% endif %}
+              </td>
+              <td>{% if r.opponent_name %}{{ r.opponent_name }}{% else %}-{% endif %}</td>
+              <td>
+                {% if r.game_type == "8ball" %}
+                  {{ r.score_for }}:{{ r.score_against }}
+                {% else %}
+                  {% if r.score > 0 %}+{{ r.score }}{% else %}{{ r.score }}{% endif %}
+                {% endif %}
+              </td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_in_count }}{% else %}-{% endif %}</td>
+              <td>{% if r.game_type == "8ball" %}{{ r.clear_boom_count }}{% else %}-{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.big_jin }}{% else %}-{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.small_jin }}{% else %}-{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.golden_nine }}{% else %}-{% endif %}</td>
+              <td>{% if r.game_type == "score" %}{{ r.foul_count }}{% else %}-{% endif %}</td>
+              <td><a class="btn" href="{% url 'diary:record_detail' r.pk %}">查看</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card friend-empty">
+      <p style="margin:0;">当前时间段暂无和 {{ friend.username }} 的对战记录。</p>
+    </div>
+  {% endif %}
+{% endblock %}

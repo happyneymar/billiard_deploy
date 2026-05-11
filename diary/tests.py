@@ -476,8 +476,60 @@ class FriendViewTests(TestCase):
         self.assertContains(response, reverse("diary:friend_requests"))
         self.assertContains(response, f"{reverse('diary:public_profile', kwargs={'username': self.other.username})}?from=friends")
         self.assertContains(response, reverse("diary:private_message_new", kwargs={"username": self.other.username}))
+        self.assertContains(response, reverse("diary:friend_history", kwargs={"username": self.other.username}))
         self.assertContains(response, reverse("diary:direct_battle_new", kwargs={"username": self.other.username}))
         self.assertContains(response, self.other.username)
+
+    def test_friend_history_filters_records_and_shows_relative_stats(self):
+        Friendship.create_pair(self.user, self.other)
+        today = timezone.localdate()
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            opponent_name=self.other.username,
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for=3,
+            score_against=0,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            opponent_name=self.other.username,
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for=1,
+            score_against=4,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            opponent_name=self.other.username,
+            game_type=DailyRecord.TYPE_SCORE,
+            score=12,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            opponent_name=self.third.username,
+            game_type=DailyRecord.TYPE_SCORE,
+            score=99,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("diary:friend_history", kwargs={"username": self.other.username}),
+            {"period": "all"},
+        )
+
+        selected_stats = response.context["selected_stats"]
+        self.assertEqual(selected_stats["total_matches"], 3)
+        self.assertEqual(selected_stats["eight_ball_matches"], 2)
+        self.assertEqual(selected_stats["eight_ball_win_rate"], 50)
+        self.assertEqual(selected_stats["score_matches"], 1)
+        self.assertEqual(selected_stats["score_win_rate"], 100)
+        self.assertContains(response, "和 ")
+        self.assertContains(response, self.other.username)
+        self.assertContains(response, reverse("diary:direct_battle_new", kwargs={"username": self.other.username}))
+        self.assertNotContains(response, self.third.username)
 
     def test_profile_from_friends_returns_to_friends_page(self):
         self.client.force_login(self.user)
