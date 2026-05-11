@@ -661,6 +661,51 @@ class GameStartViewTests(TestCase):
         self.assertContains(response, reverse("diary:record_list"))
 
 
+class RecordListStatsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="statsuser", password="pass12345")
+
+    def test_record_list_shows_match_counts_and_win_rates(self):
+        today = timezone.localdate()
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for=3,
+            score_against=0,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for=1,
+            score_against=4,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            game_type=DailyRecord.TYPE_SCORE,
+            score=12,
+        )
+        DailyRecord.objects.create(
+            user=self.user,
+            date=today,
+            game_type=DailyRecord.TYPE_SCORE,
+            score=-3,
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("diary:record_list"))
+
+        self.assertContains(response, "总场数")
+        self.assertContains(response, ">4</div>")
+        self.assertContains(response, "黑八场数")
+        self.assertContains(response, "黑八胜率")
+        self.assertContains(response, "追分场数")
+        self.assertContains(response, "追分胜率")
+        self.assertContains(response, ">50%</div>", count=2)
+
+
 class RecordDetailViewTests(TestCase):
     def test_8ball_score_is_shown_inside_detail_card(self):
         user = User.objects.create_user(username="recorduser", password="pass12345")

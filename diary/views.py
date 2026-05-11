@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, F, Q, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -161,7 +161,29 @@ def record_list(request):
     base_qs = DailyRecord.objects.filter(user=request.user)
 
     def _agg(qs):
+        total_matches = qs.count()
+        eight_ball_matches = qs.filter(game_type=DailyRecord.TYPE_8BALL).count()
+        eight_ball_wins = qs.filter(
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for__gt=F("score_against"),
+        ).count()
+        score_matches = qs.filter(game_type=DailyRecord.TYPE_SCORE).count()
+        score_wins = qs.filter(
+            game_type=DailyRecord.TYPE_SCORE,
+            score__gt=0,
+        ).count()
+
+        def _win_rate(wins, matches):
+            if not matches:
+                return 0
+            return round(wins * 100 / matches)
+
         return {
+            "total_matches": total_matches,
+            "eight_ball_matches": eight_ball_matches,
+            "eight_ball_win_rate": _win_rate(eight_ball_wins, eight_ball_matches),
+            "score_matches": score_matches,
+            "score_win_rate": _win_rate(score_wins, score_matches),
             "clear_in": qs.aggregate(s=Sum("clear_in_count"))["s"] or 0,
             "clear_boom": qs.aggregate(s=Sum("clear_boom_count"))["s"] or 0,
             "big_jin": qs.aggregate(s=Sum("big_jin"))["s"] or 0,
@@ -178,6 +200,8 @@ def record_list(request):
 
     # 获取当前选择的时间段，默认为"本月"
     period = request.GET.get("period", "month")
+    if period not in stats:
+        period = "month"
 
     records = base_qs.order_by("-date", "-created_at")
     return render(
@@ -187,6 +211,7 @@ def record_list(request):
             "records": records,
             "stats": stats,
             "period": period,
+            "selected_stats": stats[period],
             "battle_notices": _build_battle_notices(request.user),
         },
     )
