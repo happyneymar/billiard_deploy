@@ -1,11 +1,377 @@
 {% extends "diary/base.html" %}
 
+{% block body_class %}home-page{% endblock %}
+
 {% block content %}
-  <h1 class="page-title">你的历史记录</h1>
-  <p class="subtle">按日期保存黑八/追分战绩、清台局数、得分，以及当天的图片/视频与评论。</p>
+  <style>
+    body.home-page {
+      --home-green: #00b887;
+      --home-green-dark: #009b75;
+      --home-cyan: #e9fffb;
+      --home-blue: #2463ff;
+      --home-purple: #7c3aed;
+      --home-orange: #df6a00;
+      --home-ink: #14213d;
+      --home-soft: #5c6b82;
+      --home-line: #d9e5ea;
+      --home-card-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+      color: var(--home-ink);
+      background:
+        linear-gradient(180deg, rgba(223, 255, 249, 0.92) 0%, rgba(241, 252, 255, 0.98) 62%, #f8fbff 100%),
+        var(--bg);
+    }
+
+    body.home-page .container {
+      width: min(1420px, calc(100% - 56px));
+      padding-top: 18px;
+    }
+
+    body.home-page .topbar {
+      padding: 12px 18px;
+      border-radius: 0;
+      border-width: 0 0 1px;
+      border-color: rgba(15, 63, 88, 0.11);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 28px rgba(15, 63, 88, 0.08);
+    }
+
+    body.home-page .brand {
+      color: var(--home-green-dark);
+      font-size: 20px;
+    }
+
+    body.home-page .brand-badge {
+      position: relative;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--home-green), #10b981);
+      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.24);
+    }
+
+    body.home-page .brand-badge::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border: 3px solid rgba(255, 255, 255, 0.92);
+      border-radius: 50%;
+    }
+
+    body.home-page .brand-badge::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      left: 50%;
+      top: 50%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.95);
+      transform: translate(-50%, -50%);
+    }
+
+    body.home-page .btn {
+      min-height: 42px;
+      border-radius: 10px;
+      border-color: transparent;
+      background: transparent;
+      color: #334155;
+      box-shadow: none;
+    }
+
+    body.home-page .btn:hover {
+      transform: translateY(-1px);
+      color: var(--home-green-dark);
+      background: rgba(0, 184, 135, 0.09);
+    }
+
+    body.home-page .btn-primary,
+    body.home-page .nav .btn-primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--home-purple), #5b5ff5);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(91, 95, 245, 0.24);
+    }
+
+    body.home-page .nav .btn-primary:first-child {
+      background: linear-gradient(135deg, var(--home-green), #05a884) !important;
+      box-shadow: 0 12px 26px rgba(0, 184, 135, 0.24);
+    }
+
+    body.home-page .pill {
+      color: #5b6475;
+      background: #f6f8fb;
+      border-color: #e5ebf0;
+    }
+
+    body.home-page .pill strong {
+      color: var(--home-ink);
+    }
+
+    .home-hero {
+      margin-top: 34px;
+      margin-bottom: 24px;
+    }
+
+    .home-title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .home-title-mark {
+      width: 34px;
+      height: 34px;
+      border: 4px solid var(--home-green-dark);
+      border-radius: 50%;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .home-title-mark::before,
+    .home-title-mark::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid var(--home-green-dark);
+      inset: 6px;
+    }
+
+    .home-title-mark::after {
+      inset: 13px;
+      background: var(--home-green-dark);
+      border: 0;
+    }
+
+    body.home-page .page-title {
+      margin: 0;
+      color: var(--home-ink);
+      font-size: 36px;
+      line-height: 1.15;
+      font-weight: 900;
+    }
+
+    body.home-page .subtle {
+      margin: 12px 0 0 48px;
+      color: #38506a;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .home-notices {
+      margin-bottom: 24px;
+      display: grid;
+      gap: 8px;
+      padding: 18px 22px;
+      border: 1px solid rgba(223, 106, 0, 0.18);
+      border-left: 5px solid #ff8a00;
+      border-radius: 10px;
+      background: #fff8ea;
+      color: #b54708;
+      box-shadow: 0 12px 24px rgba(223, 106, 0, 0.08);
+    }
+
+    .home-stats-card {
+      margin-bottom: 26px;
+      padding: 28px 28px 26px;
+      border: 0;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--home-card-shadow);
+    }
+
+    .home-period-tabs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--home-line);
+    }
+
+    .home-period-tabs .btn {
+      position: relative;
+      min-height: 38px;
+      padding: 8px 16px;
+      border-radius: 0;
+      color: #41526b;
+      font-size: 15px !important;
+      background: transparent;
+    }
+
+    .home-period-tabs .btn-primary {
+      color: var(--home-green-dark);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .home-period-tabs .btn-primary::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: -15px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--home-green);
+    }
+
+    .home-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      text-align: center;
+    }
+
+    .home-stat-grid + .home-stat-grid {
+      margin-top: 18px;
+    }
+
+    .home-stat {
+      min-height: 98px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: #f6f8fb;
+    }
+
+    .home-stat-primary:nth-child(1) { background: #edf8ff; }
+    .home-stat-primary:nth-child(2) { background: #e9fff5; }
+    .home-stat-primary:nth-child(3) { background: #e8fff1; }
+    .home-stat-primary:nth-child(4) { background: #fbf1ff; }
+    .home-stat-primary:nth-child(5) { background: #fff7e7; }
+
+    .home-stat-label {
+      color: #52627a;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .home-stat-value {
+      margin-top: 8px;
+      color: var(--home-ink);
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .home-stat-primary:nth-child(1) .home-stat-value { color: var(--home-blue); }
+    .home-stat-primary:nth-child(2) .home-stat-value,
+    .home-stat-primary:nth-child(3) .home-stat-value { color: var(--home-green-dark); }
+    .home-stat-primary:nth-child(4) .home-stat-value { color: var(--home-purple); }
+    .home-stat-primary:nth-child(5) .home-stat-value { color: var(--home-orange); }
+
+    .home-table-card {
+      padding: 0;
+      overflow-x: auto;
+      border: 0;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: var(--home-card-shadow);
+    }
+
+    body.home-page .table {
+      min-width: 960px;
+      border: 0;
+      border-radius: 0;
+    }
+
+    body.home-page .table th {
+      padding: 17px 18px;
+      color: #ffffff;
+      background: var(--home-green);
+      border-bottom: 0;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    body.home-page .table th:first-child {
+      border-top-left-radius: 16px;
+    }
+
+    body.home-page .table th:last-child {
+      border-top-right-radius: 16px;
+    }
+
+    body.home-page .table td {
+      padding: 18px;
+      color: var(--home-ink);
+      border-bottom: 1px solid #edf2f6;
+      background: #ffffff;
+      font-size: 15px;
+    }
+
+    body.home-page .table tr:hover td {
+      background: #f7fffc;
+    }
+
+    body.home-page .badge-8ball {
+      color: #7c3aed;
+      background: #f1e6ff;
+      border-color: #e3ccff;
+    }
+
+    body.home-page .badge-score {
+      color: var(--home-green-dark);
+      background: #e5fff4;
+      border-color: #bff5de;
+    }
+
+    .home-action-delete {
+      background: #ff2e3f !important;
+      border-color: #ff2e3f !important;
+      color: #ffffff !important;
+    }
+
+    .home-empty {
+      color: var(--home-soft);
+      background: rgba(255, 255, 255, 0.94);
+      border: 0;
+      box-shadow: var(--home-card-shadow);
+    }
+
+    @media (max-width: 900px) {
+      body.home-page .container {
+        width: min(100% - 28px, 1420px);
+      }
+
+      body.home-page .topbar {
+        border-radius: 16px;
+      }
+
+      body.home-page .page-title {
+        font-size: 30px;
+      }
+
+      body.home-page .subtle {
+        margin-left: 0;
+      }
+
+      .home-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .home-stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .home-stats-card {
+        padding: 20px 16px;
+      }
+    }
+  </style>
+
+  <section class="home-hero">
+    <div class="home-title-row">
+      <span class="home-title-mark" aria-hidden="true"></span>
+      <h1 class="page-title">你的历史记录</h1>
+    </div>
+    <p class="subtle">按日期保存黑八/追分战绩、清台局数、得分，以及当天的图片/视频与评论。</p>
+  </section>
 
   {% if battle_notices %}
-    <div class="card" style="margin-bottom:18px;display:grid;gap:8px;">
+    <div class="home-notices">
       {% for notice in battle_notices %}
         <p style="margin:0;font-weight:750;">{{ notice }}</p>
       {% endfor %}
@@ -13,63 +379,63 @@
   {% endif %}
 
   {# ---------- 统计面板 ---------- #}
-  <div class="card" style="padding:14px 16px; margin-bottom:18px;">
+  <div class="home-stats-card">
     {# 时间段选择标签 #}
-    <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
-      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">本月</a>
-      <a href="?period=half_year" class="btn {% if period == 'half_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">半年内</a>
-      <a href="?period=one_year" class="btn {% if period == 'one_year' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">一年内</a>
-      <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% endif %}" style="font-size:12px; padding:6px 12px;">历史总计</a>
+    <div class="home-period-tabs">
+      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% endif %}">本月</a>
+      <a href="?period=half_year" class="btn {% if period == 'half_year' %}btn-primary{% endif %}">半年内</a>
+      <a href="?period=one_year" class="btn {% if period == 'one_year' %}btn-primary{% endif %}">一年内</a>
+      <a href="?period=all" class="btn {% if period == 'all' %}btn-primary{% endif %}">历史总计</a>
     </div>
     {# 统计数据 #}
-    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; text-align:center; margin-bottom:14px;">
-      <div>
-        <div style="font-size:11px; color:var(--muted);">总场数</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.total_matches }}</div>
+    <div class="home-stat-grid">
+      <div class="home-stat home-stat-primary">
+        <div class="home-stat-label">总场数</div>
+        <div class="home-stat-value">{{ selected_stats.total_matches }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">黑八场数</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.eight_ball_matches }}</div>
+      <div class="home-stat home-stat-primary">
+        <div class="home-stat-label">黑八场数</div>
+        <div class="home-stat-value">{{ selected_stats.eight_ball_matches }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">黑八胜率</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.eight_ball_win_rate }}%</div>
+      <div class="home-stat home-stat-primary">
+        <div class="home-stat-label">黑八胜率</div>
+        <div class="home-stat-value">{{ selected_stats.eight_ball_win_rate }}%</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">追分场数</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.score_matches }}</div>
+      <div class="home-stat home-stat-primary">
+        <div class="home-stat-label">追分场数</div>
+        <div class="home-stat-value">{{ selected_stats.score_matches }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">追分胜率</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.score_win_rate }}%</div>
+      <div class="home-stat home-stat-primary">
+        <div class="home-stat-label">追分胜率</div>
+        <div class="home-stat-value">{{ selected_stats.score_win_rate }}%</div>
       </div>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; text-align:center;">
-      <div>
-        <div style="font-size:11px; color:var(--muted);">接清</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.clear_in }}</div>
+    <div class="home-stat-grid">
+      <div class="home-stat">
+        <div class="home-stat-label">接清</div>
+        <div class="home-stat-value">{{ selected_stats.clear_in }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">炸清</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.clear_boom }}</div>
+      <div class="home-stat">
+        <div class="home-stat-label">炸清</div>
+        <div class="home-stat-value">{{ selected_stats.clear_boom }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">大金</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.big_jin }}</div>
+      <div class="home-stat">
+        <div class="home-stat-label">大金</div>
+        <div class="home-stat-value">{{ selected_stats.big_jin }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">小金</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.small_jin }}</div>
+      <div class="home-stat">
+        <div class="home-stat-label">小金</div>
+        <div class="home-stat-value">{{ selected_stats.small_jin }}</div>
       </div>
-      <div>
-        <div style="font-size:11px; color:var(--muted);">黄金九</div>
-        <div style="font-size:24px; font-weight:800;">{{ selected_stats.golden_nine }}</div>
+      <div class="home-stat">
+        <div class="home-stat-label">黄金九</div>
+        <div class="home-stat-value">{{ selected_stats.golden_nine }}</div>
       </div>
     </div>
   </div>
 
   {% if records %}
-    <div class="card">
+    <div class="home-table-card">
       <table class="table">
         <thead>
           <tr>
@@ -113,8 +479,8 @@
               <td>{% if r.game_type == "score" %}{{ r.foul_count }}{% else %}—{% endif %}</td>
               <td>
                 <a class="btn" href="{% url 'diary:record_detail' r.pk %}">查看</a>
-                <a class="btn" href="{% url 'diary:record_delete' r.pk %}"
-                  style="background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.3);color:rgba(239,68,68,0.88);font-size:12px;padding:5px 10px;margin-left:4px;">
+                <a class="btn home-action-delete" href="{% url 'diary:record_delete' r.pk %}"
+                  style="font-size:12px;padding:5px 10px;margin-left:4px;">
                   删除
                 </a>
               </td>
@@ -124,7 +490,7 @@
       </table>
     </div>
   {% else %}
-    <div class="card">
+    <div class="card home-empty">
       <p style="margin: 0;">暂无记录。点击右上角"新增当天记录"开始记录。</p>
     </div>
   {% endif %}

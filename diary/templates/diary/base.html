@@ -196,7 +196,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="{% block body_class %}{% endblock %}">
     <div class="container">
       {% block topbar %}
         <header class="topbar">
