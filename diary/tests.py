@@ -385,6 +385,54 @@ class BattleViewTests(TestCase):
         self.assertNotContains(response, "今日")
         self.assertNotContains(response, "在球厅地方")
 
+    def test_joined_battle_can_be_cancelled_and_notice_disappears(self):
+        battle = BattleRequest.objects.create(
+            user=self.other,
+            battle_time=self.now + timedelta(hours=1),
+            location="可取消球厅",
+            player_count=1,
+        )
+        BattleResponse.objects.create(battle=battle, user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:battles"))
+
+        self.assertContains(response, reverse("diary:battle_cancel", kwargs={"pk": battle.pk}))
+        self.assertTrue(BattleResponse.objects.filter(battle=battle, user=self.user).exists())
+        self.assertTrue(any("可取消球厅" in notice for notice in response.context["battle_notices"]))
+
+        response = self.client.post(
+            reverse("diary:battle_cancel", kwargs={"pk": battle.pk}),
+            follow=True,
+        )
+
+        self.assertFalse(BattleResponse.objects.filter(battle=battle, user=self.user).exists())
+        self.assertFalse(any("可取消球厅" in notice for notice in response.context["battle_notices"]))
+
+    def test_created_battle_can_be_cancelled_by_owner(self):
+        battle = BattleRequest.objects.create(
+            user=self.user,
+            battle_time=self.now + timedelta(hours=1),
+            location="发起者取消球厅",
+            player_count=1,
+        )
+        BattleResponse.objects.create(battle=battle, user=self.other)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:battles"))
+
+        self.assertContains(response, reverse("diary:battle_cancel", kwargs={"pk": battle.pk}))
+        self.assertContains(response, "发起者取消球厅")
+
+        response = self.client.post(
+            reverse("diary:battle_cancel", kwargs={"pk": battle.pk}),
+            follow=True,
+        )
+
+        self.assertFalse(BattleRequest.objects.filter(pk=battle.pk).exists())
+        self.assertFalse(BattleResponse.objects.filter(battle_id=battle.pk).exists())
+        self.assertNotContains(response, "发起者取消球厅")
+
     def test_created_battles_page_lists_public_and_direct_battles_i_started(self):
         Friendship.create_pair(self.user, self.other)
         public_battle = BattleRequest.objects.create(
@@ -422,6 +470,8 @@ class FriendViewTests(TestCase):
 
         response = self.client.get(reverse("diary:record_list"))
 
+        self.assertContains(response, reverse("diary:tutorials"))
+        self.assertContains(response, "论坛与教学")
         self.assertContains(response, reverse("diary:friends"))
         self.assertContains(response, reverse("diary:messages"))
         self.assertContains(response, "好友")
@@ -429,6 +479,21 @@ class FriendViewTests(TestCase):
         self.assertNotContains(response, "消息（")
         self.assertNotContains(response, "查看他人记录")
         self.assertNotContains(response, "查询")
+
+    def test_tutorials_page_shows_columns_and_video_selectors(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("diary:tutorials"))
+
+        self.assertContains(response, "论坛与教学")
+        self.assertContains(response, "入门")
+        self.assertContains(response, "进阶")
+        self.assertContains(response, "基本规则")
+        self.assertContains(response, "进球点与进球线")
+        self.assertContains(response, "基础杆法")
+        self.assertContains(response, "走位线路")
+        self.assertContains(response, "清台思路")
+        self.assertContains(response, '<select class="tutorial-select"', count=5)
 
     def test_topbar_message_button_shows_pending_message_count(self):
         for offset in (1, 2):

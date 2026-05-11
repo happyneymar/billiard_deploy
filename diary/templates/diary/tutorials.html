@@ -1,0 +1,386 @@
+{% extends "diary/base.html" %}
+
+{% block body_class %}tutorials-page{% endblock %}
+
+{% block content %}
+  <style>
+    body.tutorials-page {
+      --learn-green: #00b887;
+      --learn-green-dark: #009b75;
+      --learn-ink: #14213d;
+      --learn-soft: #5c6b82;
+      --learn-line: #d9e5ea;
+      --learn-purple: #6d5dfc;
+      --learn-shadow: 0 18px 46px rgba(15, 63, 88, 0.12);
+    }
+
+    .tutorial-tabs {
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tutorial-tab {
+      min-width: 130px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 63, 88, 0.1);
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--learn-ink);
+      box-shadow: 0 12px 24px rgba(15, 63, 88, 0.06);
+    }
+
+    .tutorial-tab[aria-selected="true"] {
+      color: #ffffff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--learn-green), #05a884);
+      box-shadow: 0 14px 28px rgba(0, 184, 135, 0.22);
+    }
+
+    .tutorial-section {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .tutorial-section.is-active {
+      display: grid;
+    }
+
+    .tutorial-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--learn-shadow);
+    }
+
+    .tutorial-card-head {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .tutorial-icon {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border-radius: 14px;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--learn-green-dark), var(--learn-green));
+      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.18);
+    }
+
+    .tutorial-card h2 {
+      margin: 0 0 6px;
+      color: var(--learn-ink);
+      font-size: 22px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .tutorial-card p {
+      margin: 0;
+      color: var(--learn-soft);
+      line-height: 1.65;
+    }
+
+    .tutorial-select {
+      font-weight: 750;
+    }
+
+    .tutorial-video {
+      position: relative;
+      min-height: 210px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 184, 135, 0.16);
+      background:
+        radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.24), transparent 20%),
+        linear-gradient(135deg, rgba(0, 184, 135, 0.92), rgba(20, 33, 61, 0.92));
+      color: #ffffff;
+    }
+
+    .tutorial-video video {
+      width: 100%;
+      height: 100%;
+      min-height: 210px;
+      display: none;
+      object-fit: cover;
+      background: #0f172a;
+    }
+
+    .tutorial-video.has-video video {
+      display: block;
+    }
+
+    .tutorial-video.has-video .tutorial-video-placeholder {
+      display: none;
+    }
+
+    .tutorial-video-placeholder {
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 22px;
+      text-align: center;
+    }
+
+    .tutorial-play {
+      width: 58px;
+      height: 58px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--learn-green-dark);
+      font-size: 26px;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .tutorial-meta {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #f4fbf9;
+    }
+
+    .tutorial-meta strong {
+      color: var(--learn-green-dark);
+      font-size: 15px;
+    }
+
+    .tutorial-points {
+      margin: 0;
+      padding-left: 18px;
+      color: #38506a;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 560px) {
+      .tutorial-tab {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .tutorial-video,
+      .tutorial-video video,
+      .tutorial-video-placeholder {
+        min-height: 180px;
+      }
+    }
+  </style>
+
+  <section class="page-hero">
+    <div class="page-title-row">
+      <span class="page-title-mark" aria-hidden="true"></span>
+      <h1 class="page-title">论坛与教学</h1>
+    </div>
+    <p class="subtle">从基本规则到清台思路，挑一段适合今天练习的视频看一看。</p>
+  </section>
+
+  <div class="tutorial-tabs" role="tablist" aria-label="教学栏目">
+    <button class="btn tutorial-tab" type="button" data-tutorial-tab="beginner" aria-selected="true">入门</button>
+    <button class="btn tutorial-tab" type="button" data-tutorial-tab="advanced" aria-selected="false">进阶</button>
+  </div>
+
+  <section class="tutorial-section is-active" data-tutorial-section="beginner">
+    <article class="tutorial-card">
+      <div class="tutorial-card-head">
+        <span class="tutorial-icon" aria-hidden="true">规</span>
+        <div>
+          <h2>基本规则</h2>
+          <p>比赛流程、犯规判定和自由球处理，先把底层规则吃透。</p>
+        </div>
+      </div>
+      <select class="tutorial-select" aria-label="基本规则视频选择">
+        <option data-title="中式八球基本规则" data-points="开球与合法击球|犯规后的自由球|胜负判定标准" data-src="https://res.cloudinary.com/dhodblzzc/video/upload/v1778498667/6%E6%9C%8820%E6%97%A5_fdlt9v.mp4">中式八球基本规则</option>
+        <option data-title="常见犯规与判罚" data-points="白球落袋|错球与连击|贴库球处理" data-src="">常见犯规与判罚</option>
+        <option data-title="开球规则讲解" data-points="开球线站位|有球入袋后的选择|干开后的处理" data-src="">开球规则讲解</option>
+      </select>
+      <div class="tutorial-video">
+        <video controls preload="metadata"></video>
+        <div class="tutorial-video-placeholder">
+          <span class="tutorial-play" aria-hidden="true">▶</span>
+          <strong data-video-title>中式八球基本规则</strong>
+          <span>课间十分钟也能补一节的规则课</span>
+        </div>
+      </div>
+      <div class="tutorial-meta">
+        <strong>学习要点</strong>
+        <ul class="tutorial-points"></ul>
+      </div>
+    </article>
+
+    <article class="tutorial-card">
+      <div class="tutorial-card-head">
+        <span class="tutorial-icon" aria-hidden="true">线</span>
+        <div>
+          <h2>进球点与进球线</h2>
+          <p>理解瞄准线和目标点，减少“感觉差一点”的失误。</p>
+        </div>
+      </div>
+      <select class="tutorial-select" aria-label="进球点与进球线视频选择">
+        <option data-title="什么是进球点" data-points="目标球进袋路线|母球接触点|袋口容错范围" data-src="">什么是进球点</option>
+        <option data-title="如何判断进球线" data-points="袋口到目标球连线|母球瞄准方向|厚薄球调整" data-src="">如何判断进球线</option>
+        <option data-title="薄球与厚球瞄准" data-points="薄球角度控制|厚球发力稳定|错觉修正" data-src="">薄球与厚球瞄准</option>
+      </select>
+      <div class="tutorial-video">
+        <video controls preload="metadata"></video>
+        <div class="tutorial-video-placeholder">
+          <span class="tutorial-play" aria-hidden="true">▶</span>
+          <strong data-video-title>什么是进球点</strong>
+          <span>把瞄准从玄学变成线条</span>
+        </div>
+      </div>
+      <div class="tutorial-meta">
+        <strong>学习要点</strong>
+        <ul class="tutorial-points"></ul>
+      </div>
+    </article>
+
+    <article class="tutorial-card">
+      <div class="tutorial-card-head">
+        <span class="tutorial-icon" aria-hidden="true">杆</span>
+        <div>
+          <h2>基础杆法</h2>
+          <p>中杆、高杆、低杆和左右塞，建立稳定的母球控制。</p>
+        </div>
+      </div>
+      <select class="tutorial-select" aria-label="基础杆法视频选择">
+        <option data-title="中杆基础" data-points="出杆平直|击球点稳定|力度控制" data-src="">中杆基础</option>
+        <option data-title="高杆跟进" data-points="母球前冲路线|发力节奏|跟进距离控制" data-src="">高杆跟进</option>
+        <option data-title="低杆拉回" data-points="低点击球|杆头穿透|拉回距离" data-src="">低杆拉回</option>
+        <option data-title="左右塞基础" data-points="塞的方向|库边反弹变化|减少偏差" data-src="">左右塞基础</option>
+      </select>
+      <div class="tutorial-video">
+        <video controls preload="metadata"></video>
+        <div class="tutorial-video-placeholder">
+          <span class="tutorial-play" aria-hidden="true">▶</span>
+          <strong data-video-title>中杆基础</strong>
+          <span>先稳住出杆，再谈花活</span>
+        </div>
+      </div>
+      <div class="tutorial-meta">
+        <strong>学习要点</strong>
+        <ul class="tutorial-points"></ul>
+      </div>
+    </article>
+  </section>
+
+  <section class="tutorial-section" data-tutorial-section="advanced">
+    <article class="tutorial-card">
+      <div class="tutorial-card-head">
+        <span class="tutorial-icon" aria-hidden="true">走</span>
+        <div>
+          <h2>走位线路</h2>
+          <p>用角度、力度和杆法规划下一颗球的位置。</p>
+        </div>
+      </div>
+      <select class="tutorial-select" aria-label="走位线路视频选择">
+        <option data-title="一库走位" data-points="入射反射关系|力度留位|避免贴库" data-src="">一库走位</option>
+        <option data-title="两库回位" data-points="线路预判|塞的补偿|安全区域选择" data-src="">两库回位</option>
+        <option data-title="小范围控球" data-points="轻推节奏|短距离停球|连续小角度" data-src="">小范围控球</option>
+      </select>
+      <div class="tutorial-video">
+        <video controls preload="metadata"></video>
+        <div class="tutorial-video-placeholder">
+          <span class="tutorial-play" aria-hidden="true">▶</span>
+          <strong data-video-title>一库走位</strong>
+          <span>让母球去你想要的位置</span>
+        </div>
+      </div>
+      <div class="tutorial-meta">
+        <strong>学习要点</strong>
+        <ul class="tutorial-points"></ul>
+      </div>
+    </article>
+
+    <article class="tutorial-card">
+      <div class="tutorial-card-head">
+        <span class="tutorial-icon" aria-hidden="true">清</span>
+        <div>
+          <h2>清台思路</h2>
+          <p>从局面判断到顺序选择，练习一杆接一杆的节奏。</p>
+        </div>
+      </div>
+      <select class="tutorial-select" aria-label="清台思路视频选择">
+        <option data-title="先难后易的顺序" data-points="处理难球|保留保险球|降低最后一颗压力" data-src="">先难后易的顺序</option>
+        <option data-title="关键球与过渡球" data-points="找关键球|安排过渡球|避免断线" data-src="">关键球与过渡球</option>
+        <option data-title="校园约球实战复盘" data-points="开局观察|中盘选择|收尾心态" data-src="">校园约球实战复盘</option>
+      </select>
+      <div class="tutorial-video">
+        <video controls preload="metadata"></video>
+        <div class="tutorial-video-placeholder">
+          <span class="tutorial-play" aria-hidden="true">▶</span>
+          <strong data-video-title>先难后易的顺序</strong>
+          <span>清台不是猛，是有顺序</span>
+        </div>
+      </div>
+      <div class="tutorial-meta">
+        <strong>学习要点</strong>
+        <ul class="tutorial-points"></ul>
+      </div>
+    </article>
+  </section>
+
+  <script>
+    function updateTutorialCard(card) {
+      var select = card.querySelector(".tutorial-select");
+      var option = select.options[select.selectedIndex];
+      var videoWrap = card.querySelector(".tutorial-video");
+      var video = card.querySelector("video");
+      var title = card.querySelector("[data-video-title]");
+      var points = card.querySelector(".tutorial-points");
+      var src = option.dataset.src || "";
+
+      title.textContent = option.dataset.title || option.textContent;
+      points.innerHTML = "";
+      (option.dataset.points || "").split("|").filter(Boolean).forEach(function (point) {
+        var item = document.createElement("li");
+        item.textContent = point;
+        points.appendChild(item);
+      });
+
+      if (src) {
+        video.src = src;
+        videoWrap.classList.add("has-video");
+      } else {
+        video.removeAttribute("src");
+        video.load();
+        videoWrap.classList.remove("has-video");
+      }
+    }
+
+    document.querySelectorAll(".tutorial-card").forEach(function (card) {
+      updateTutorialCard(card);
+      card.querySelector(".tutorial-select").addEventListener("change", function () {
+        updateTutorialCard(card);
+      });
+    });
+
+    document.querySelectorAll("[data-tutorial-tab]").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var target = tab.dataset.tutorialTab;
+        document.querySelectorAll("[data-tutorial-tab]").forEach(function (button) {
+          button.setAttribute("aria-selected", button.dataset.tutorialTab === target ? "true" : "false");
+        });
+        document.querySelectorAll("[data-tutorial-section]").forEach(function (section) {
+          section.classList.toggle("is-active", section.dataset.tutorialSection === target);
+        });
+      });
+    });
+  </script>
+{% endblock %}

@@ -316,17 +316,29 @@
           </div>
           {% if battle.user_id != user.id %}
             {% if battle.has_joined %}
-              <span class="pill"><strong>已应战</strong></span>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="pill"><strong>已应战</strong></span>
+                <form class="js-preserve-battle-scroll" method="post" action="{% url 'diary:battle_cancel' battle.pk %}">
+                  {% csrf_token %}
+                  <button class="btn" type="submit">取消应战</button>
+                </form>
+              </div>
             {% elif battle.is_full %}
               <span class="pill"><strong>人数已满</strong></span>
             {% else %}
-              <form method="post" action="{% url 'diary:battle_join' battle.pk %}">
+              <form class="js-preserve-battle-scroll" method="post" action="{% url 'diary:battle_join' battle.pk %}">
                 {% csrf_token %}
                 <button class="btn btn-primary" type="submit">加入</button>
               </form>
             {% endif %}
           {% else %}
-            <span class="pill"><strong>我发起的</strong></span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span class="pill"><strong>我发起的</strong></span>
+              <form class="js-preserve-battle-scroll" method="post" action="{% url 'diary:battle_cancel' battle.pk %}">
+                {% csrf_token %}
+                <button class="btn" type="submit">取消约战</button>
+              </form>
+            </div>
           {% endif %}
         </div>
 
@@ -349,4 +361,23 @@
       <div class="battle-empty"><p style="margin:0;">暂无约战请求。</p></div>
     {% endfor %}
   </div>
+  <script>
+    (function () {
+      var scrollKey = "battlePageScrollY";
+
+      document.querySelectorAll(".js-preserve-battle-scroll").forEach(function (form) {
+        form.addEventListener("submit", function () {
+          sessionStorage.setItem(scrollKey, String(window.scrollY || window.pageYOffset || 0));
+        });
+      });
+
+      var savedY = sessionStorage.getItem(scrollKey);
+      if (savedY !== null) {
+        sessionStorage.removeItem(scrollKey);
+        requestAnimationFrame(function () {
+          window.scrollTo(0, Number(savedY) || 0);
+        });
+      }
+    })();
+  </script>
 {% endblock %}

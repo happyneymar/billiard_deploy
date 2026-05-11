@@ -218,6 +218,11 @@ def record_list(request):
 
 
 @login_required
+def tutorials(request):
+    return render(request, "diary/tutorials.html")
+
+
+@login_required
 def record_new(request):
     if request.method == "POST":
         form = DailyRecordForm(request.POST)
@@ -1101,6 +1106,25 @@ def battle_join(request, pk: int):
     else:
         BattleResponse.objects.create(battle=battle, user=request.user)
         messages.success(request, "已加入约战。")
+    return redirect("diary:battles")
+
+
+@login_required
+@require_http_methods(["POST"])
+def battle_cancel(request, pk: int):
+    battle = get_object_or_404(BattleRequest, pk=pk)
+    if battle.battle_time < timezone.now():
+        messages.error(request, "这条约战已经结束，不能取消。")
+    elif battle.user_id == request.user.id:
+        battle.delete()
+        messages.success(request, "已取消这条约战。")
+    else:
+        response = BattleResponse.objects.filter(battle=battle, user=request.user).first()
+        if response is None:
+            messages.info(request, "你还没有应战这条约战。")
+        else:
+            response.delete()
+            messages.success(request, "已取消约战。")
     return redirect("diary:battles")
 @login_required
 def media_serve(request, relative_path: str):
