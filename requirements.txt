@@ -10,3 +10,6 @@ psycopg2-binary>=2.9.0
 
 # 白噪音（用于在生产环境提供静态文件）
 whitenoise>=6.6.0
+
+# Cloudinary（用于 Render 等无持久磁盘环境的图片/视频上传存储）
+cloudinary>=1.44.0

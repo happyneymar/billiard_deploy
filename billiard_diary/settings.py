@@ -155,5 +155,14 @@ LOGOUT_REDIRECT_URL = "/login/"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
+USE_CLOUDINARY_MEDIA = env_bool(
+    "USE_CLOUDINARY_MEDIA",
+    bool(os.environ.get("CLOUDINARY_URL")),
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if USE_CLOUDINARY_MEDIA:
+    STORAGES["default"] = {
+        "BACKEND": "diary.storage.CloudinaryMediaStorage",
+    }

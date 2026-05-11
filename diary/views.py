@@ -5,6 +5,7 @@ import re
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -1020,6 +1021,12 @@ def media_serve(request, relative_path: str):
         )
 
     content_type, _ = mimetypes.guess_type(media.file.name)
+    if settings.USE_CLOUDINARY_MEDIA:
+        try:
+            return redirect(media.file.url)
+        except Exception as exc:  # pragma: no cover
+            raise Http404("媒体文件不存在") from exc
+
     try:
         media_handle = media.file.open("rb")
     except Exception as exc:  # pragma: no cover
@@ -1038,6 +1045,7 @@ def media_delete(request, pk: int):
         record__user=request.user,
     )
     record_pk = media.record.pk
+    media.file.delete(save=False)
     media.delete()
     return redirect("diary:record_detail", pk=record_pk)
 

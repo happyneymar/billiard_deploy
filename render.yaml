@@ -24,3 +24,7 @@ services:
         value: "https://*.onrender.com"
       - key: TIME_ZONE
         value: "Asia/Shanghai"
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: USE_CLOUDINARY_MEDIA
+        value: "True"
