@@ -326,7 +326,29 @@ def record_detail(request, pk: int):
 
 def _build_stats(base_qs):
     def _agg(qs):
+        total_matches = qs.count()
+        eight_ball_matches = qs.filter(game_type=DailyRecord.TYPE_8BALL).count()
+        eight_ball_wins = qs.filter(
+            game_type=DailyRecord.TYPE_8BALL,
+            score_for__gt=F("score_against"),
+        ).count()
+        score_matches = qs.filter(game_type=DailyRecord.TYPE_SCORE).count()
+        score_wins = qs.filter(
+            game_type=DailyRecord.TYPE_SCORE,
+            score__gt=0,
+        ).count()
+
+        def _win_rate(wins, matches):
+            if not matches:
+                return 0
+            return round(wins * 100 / matches)
+
         return {
+            "total_matches": total_matches,
+            "eight_ball_matches": eight_ball_matches,
+            "eight_ball_win_rate": _win_rate(eight_ball_wins, eight_ball_matches),
+            "score_matches": score_matches,
+            "score_win_rate": _win_rate(score_wins, score_matches),
             "clear_in": qs.aggregate(s=Sum("clear_in_count"))["s"] or 0,
             "clear_boom": qs.aggregate(s=Sum("clear_boom_count"))["s"] or 0,
             "big_jin": qs.aggregate(s=Sum("big_jin"))["s"] or 0,

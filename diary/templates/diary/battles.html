@@ -21,88 +21,8 @@
     }
 
     body.battle-page .container {
-      width: min(1420px, calc(100% - 56px));
-      padding-top: 18px;
-    }
-
-    body.battle-page .topbar {
-      padding: 12px 18px;
-      border-radius: 0;
-      border-width: 0 0 1px;
-      border-color: rgba(15, 63, 88, 0.11);
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 10px 28px rgba(15, 63, 88, 0.08);
-    }
-
-    body.battle-page .brand {
-      color: var(--battle-green-dark);
-      font-size: 20px;
-    }
-
-    body.battle-page .brand-badge {
-      position: relative;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--battle-green), #10b981);
-      box-shadow: 0 12px 24px rgba(0, 184, 135, 0.24);
-    }
-
-    body.battle-page .brand-badge::before {
-      content: "";
-      position: absolute;
-      inset: 9px;
-      border: 3px solid rgba(255, 255, 255, 0.92);
-      border-radius: 50%;
-    }
-
-    body.battle-page .brand-badge::after {
-      content: "";
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      left: 50%;
-      top: 50%;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.95);
-      transform: translate(-50%, -50%);
-    }
-
-    body.battle-page .btn {
-      min-height: 42px;
-      border-radius: 10px;
-      border-color: transparent;
-      background: rgba(255, 255, 255, 0.8);
-      color: #334155;
-      box-shadow: none;
-    }
-
-    body.battle-page .btn:hover {
-      transform: translateY(-1px);
-      color: var(--battle-green-dark);
-      background: rgba(0, 184, 135, 0.09);
-      text-decoration: none;
-    }
-
-    body.battle-page .btn-primary,
-    body.battle-page .nav .btn-primary {
-      color: #ffffff;
-      background: linear-gradient(135deg, var(--battle-purple), #5b5ff5);
-      border-color: transparent;
-      box-shadow: 0 12px 26px rgba(91, 95, 245, 0.24);
-    }
-
-    body.battle-page .nav .btn-primary:first-child {
-      background: linear-gradient(135deg, var(--battle-green), #05a884) !important;
-      box-shadow: 0 12px 26px rgba(0, 184, 135, 0.24);
-    }
-
-    body.battle-page .pill {
-      color: #5b6475;
-      background: #f6f8fb;
-      border-color: #e5ebf0;
-    }
-
-    body.battle-page .pill strong {
-      color: var(--battle-ink);
+      width: min(980px, calc(100% - 32px));
+      padding-top: 24px;
     }
 
     body.battle-page input,
@@ -295,11 +215,7 @@
 
     @media (max-width: 900px) {
       body.battle-page .container {
-        width: min(100% - 28px, 1420px);
-      }
-
-      body.battle-page .topbar {
-        border-radius: 16px;
+        width: min(100% - 28px, 980px);
       }
 
       body.battle-page .page-title {
@@ -312,6 +228,25 @@
 
       .battle-form-card {
         padding: 20px 16px;
+      }
+
+      .battle-hero {
+        margin-top: 24px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .battle-card,
+      .battle-empty {
+        padding: 16px 14px;
+      }
+
+      .battle-submit-row {
+        justify-content: stretch;
+      }
+
+      .battle-submit-row .btn {
+        width: 100%;
       }
     }
   </style>
